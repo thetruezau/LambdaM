@@ -1,7 +1,7 @@
 Require Import List.
 Require Import Autosubst.Autosubst.
-Require Import Coq.Relations.Relation_Definitions.
-Require Import Coq.Relations.Relation_Operators.
+Require Import Stdlib.Relations.Relation_Definitions.
+Require Import Stdlib.Relations.Relation_Operators.
 
 Import ListNotations.
 

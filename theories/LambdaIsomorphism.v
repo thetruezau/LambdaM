@@ -3,7 +3,7 @@ Require Import Autosubst.Autosubst.
 Require Import Coq.Relations.Relation_Definitions.
 Require Import Coq.Relations.Relation_Operators.
 
-Require Import Canonical.
+Require Import Canonical CanonicalIsomorphism.
 
 Import ListNotations.
 
@@ -239,16 +239,17 @@ Proof.
   - asimpl. rewrite<- IHs1. asimpl. rewrite<- IHs2. asimpl. reflexivity.
 Qed.
 
-Lemma h_subst_pres :
-  forall l s σ, h s.[σ >>> H] l..[σ] = (h s l).[σ >>> H].
+Lemma forall_implies_h_subst_pres :
+  forall l σ, Forall (fun u => H u.[σ] = (H u).[σ >>> H]) l ->
+        forall s, h s.[σ >>> H] l..[σ] = (h s l).[σ >>> H].
 Proof.
-  induction l as [| u l]; intros ; asimpl.
+  intros l σ H0. induction H0 as [| u l]; intros ; asimpl.
   - reflexivity.
   - unfold biApp at 2 4.
     fold (h (App s.[σ >>> H] (H u.[σ])) l..[σ]).
-    fold (h (App s (H u)) l). rewrite<- IHl. asimpl.
-    repeat f_equal. 
-Admitted.
+    fold (h (App s (H u)) l). rewrite<- IHForall. asimpl.
+    repeat f_equal. apply H0.
+Qed.
 
 (* As bijecções preservam a substituição *)
 (* ------------------------------------- *)
@@ -269,11 +270,13 @@ Proof.
   induction s using sim_λc_ind ; intros ; asimpl.
   - reflexivity.
   - f_equal. rewrite up_sigma_H. apply IHs.
-  - unfold biApp at 2. fold (h (App (Var x) (H s)) l). admit.
+  - unfold biApp at 2. fold (h (App (Var x) (H s)) l).
+    assert (rw_back : σ x = (Vari x).[σ]). { reflexivity. }
+    rewrite rw_back. rewrite<- app_subst_pres. admit.
   - unfold biApp at 2 4.
     fold (h (App (Lam (H s1.[up σ])) (H s2.[σ])) l..[σ]).
     fold (h (App (Lam (H s1)) (H s2)) l).
-
+    apply forall_implies_h_subst_pres.
 Qed.
 
 (* As bijecções preservam a relação de um passo *)

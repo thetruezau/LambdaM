@@ -1,2 +1,2 @@
--R theories LambdaM
+-R . LambdaM
 theories
