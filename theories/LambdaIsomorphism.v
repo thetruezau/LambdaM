@@ -52,7 +52,7 @@ Hint Unfold G : core.
 (*   H:   λc --> λ    *)
 (* ------------------ *)
 
-Definition biApp (i: λc -> λ) (s1: λ) (s2: λc) : λ := App s1 (i s2).
+Definition biApp (i: λc -> λ) (s: λ) (t: λc) : λ := App s (i t).
 Hint Unfold biApp : core.
 
 Fixpoint H (s: λc) : λ :=
@@ -133,6 +133,24 @@ Proof.
     + induction l' ; constructor ; auto. apply inversion1.
 Qed.
 
+Lemma h_app_lemma : forall l l' s, h s (l ++ l') = h (h s l) l'.
+Proof.
+  intros l l'. induction l ; asimpl ; auto.
+  - intro s. unfold biApp at 2. fold (h (App s (H a)) (l ++ l')). apply IHl.
+Qed.    
+  
+Lemma h_is_multiapp :
+  forall t u l, H t@(u, l) = h (App (H t) (H u)) l.
+Proof.
+  destruct t as [x | t | x u' l' | t u' l'] ; intros ; asimpl ; auto.
+  - unfold biApp at 2. fold (h (App (Var x) (H u')) (l' ++ u::l)).
+    unfold biApp at 2. fold (h (App (Var x) (H u')) l').
+    rewrite h_app_lemma. reflexivity.
+  - unfold biApp at 2. fold (h (App (Lam (H t)) (H u')) (l' ++ u::l)).
+    unfold biApp at 2. fold (h (App (Lam (H t)) (H u')) l').
+    rewrite h_app_lemma. reflexivity.    
+Qed.
+    
 Lemma g_ren_pres :
   forall s l ξ, g s.[ren ξ] l..[ren ξ] = (g s l).[ren ξ].
 Proof.
@@ -145,6 +163,24 @@ Proof.
     + specialize IHs with [] (upren ξ). asimpl in IHs. assumption.
   - asimpl. rewrite<- IHs1. asimpl. rewrite<- IHs2. asimpl. reflexivity.
 Qed.
+
+Lemma forall_implies_h_subst_pres :
+  forall l σ, Forall (fun u => H u.[σ] = (H u).[σ >>> H]) l ->
+        forall s, h s.[σ >>> H] l..[σ] = (h s l).[σ >>> H].
+Proof.
+  intros l σ H0. induction H0 as [| u l]; intros ; asimpl.
+  - reflexivity.
+  - unfold biApp at 2 4.
+    fold (h (App s.[σ >>> H] (H u.[σ])) l..[σ]).
+    fold (h (App s (H u)) l). rewrite<- IHForall. asimpl.
+    repeat f_equal. apply H0.
+Qed.
+
+Lemma H_ren_comp :
+  forall ξ, ren ξ = ren ξ >>> H.
+Proof. reflexivity. Qed.
+  
+(* isomorfismos preservam renamings *)
 
 Lemma G_ren_pres :
   forall s ξ, G s.[ren ξ] = (G s).[ren ξ].
@@ -164,7 +200,23 @@ Proof.
   - f_equal. apply IHs.
   - unfold biApp at 2. fold (h (App (Var x) (H s)) l). simpl.
     unfold biApp at 2. fold (h (App (Var (ξ x)) (H s.[ren ξ])) l..[ren ξ]).
-Admitted.
+
+    assert (app_rw : App (Var (ξ x)) (H s.[ren ξ]) = (App (Var x) (H s)).[ren ξ]).
+    { asimpl. f_equal. apply IHs. }
+
+    rewrite app_rw. rewrite H_ren_comp at 1 2.
+    + apply forall_implies_h_subst_pres.
+      induction H0 as [| u l] ; auto.
+  - unfold biApp at 2. fold (h (App (Lam (H s1.[ren (upren ξ)])) (H s2.[ren ξ])) l..[ren ξ]).
+    unfold biApp at 2. fold (h (App (Lam (H s1)) (H s2)) l).
+
+    assert (app_rw : App (Lam (H s1.[ren (upren ξ)])) (H s2.[ren ξ]) = (App (Lam (H s1)) (H s2)).[ren ξ]).
+    { asimpl. repeat f_equal ; [apply IHs1 | apply IHs2]. }
+
+    rewrite app_rw. rewrite H_ren_comp at 1 2.
+    + apply forall_implies_h_subst_pres.
+      induction H0 as [| u l] ; auto.    
+Qed.
 
 Lemma up_sigma_G σ : up (σ >>> G) = up σ >>> G.
 Proof.
@@ -178,7 +230,7 @@ Proof.
   f_ext. destruct x ; asimpl.
   - reflexivity.
   - symmetry. apply H_ren_pres.
-Admitted.
+Qed.
 
 Lemma g_subst_pres :
   forall s l σ, g s.[σ] l..[σ >>> G] = (g s l).[σ >>> G].
@@ -195,18 +247,6 @@ Proof.
       set (up σ) as σ'. specialize IHs with [] σ'.
       asimpl in IHs. assumption.
   - asimpl. rewrite<- IHs1. asimpl. rewrite<- IHs2. asimpl. reflexivity.
-Qed.
-
-Lemma forall_implies_h_subst_pres :
-  forall l σ, Forall (fun u => H u.[σ] = (H u).[σ >>> H]) l ->
-        forall s, h s.[σ >>> H] l..[σ] = (h s l).[σ >>> H].
-Proof.
-  intros l σ H0. induction H0 as [| u l]; intros ; asimpl.
-  - reflexivity.
-  - unfold biApp at 2 4.
-    fold (h (App s.[σ >>> H] (H u.[σ])) l..[σ]).
-    fold (h (App s (H u)) l). rewrite<- IHForall. asimpl.
-    repeat f_equal. apply H0.
 Qed.
 
 (* As bijecções preservam a substituição *)
@@ -229,8 +269,10 @@ Proof.
   - reflexivity.
   - f_equal. rewrite up_sigma_H. apply IHs.
   - unfold biApp at 2. fold (h (App (Var x) (H s)) l).
-    assert (rw_back : σ x = (Vari x).[σ]). { reflexivity. }
-    rewrite rw_back. rewrite<- app_subst_pres. simpl. admit.
+    rewrite<- forall_implies_h_subst_pres.
+    + asimpl. rewrite<- IHs. apply h_is_multiapp.
+    + induction H0 ; auto.
+      
   - unfold biApp at 2 4.
     fold (h (App (Lam (H s1.[up σ])) (H s2.[σ])) l..[σ]).
     fold (h (App (Lam (H s1)) (H s2)) l).
@@ -242,10 +284,34 @@ Proof.
       - rewrite IHs2. reflexivity. }
 
     rewrite<- rw_subst. apply forall_implies_h_subst_pres.
-    induction l as [| u l].
-    + constructor.
-    + inversion H0 ; subst. auto.        
-Admitted.
+    + induction H0 ; auto.
+Qed.
 
 (* As bijecções preservam a relação de um passo *)
 (* -------------------------------------------- *)
+  
+Lemma g_step_pres :
+  forall s s', step s s' ->
+          forall l, Canonical.step (g s l) (g s' l).
+Proof.
+  intros s s' H0. induction H0 ; intros ; subst.
+  - asimpl.
+    assert (g_subst : g s.[t/] [] = (g s []).[g t []/]).
+    { fold (G s.[t/]). fold (G s). fold (G t). rewrite G_subst_pres.
+      f_equal. f_ext. destruct x ; auto. }
+    
+    destruct l as [| u l].
+    + constructor. left. constructor. exact g_subst.
+    + constructor. right. constructor.
+      rewrite<- g_subst. fold (G s.[t/]). apply g_is_multiapp.
+  - destruct l as [| u l] ; asimpl.
+    + constructor. apply IHstep.
+    + constructor. apply IHstep.
+  - asimpl. apply IHstep.
+  - asimpl. repeat rewrite g_is_multiapp. apply step_comp_app2. apply IHstep.
+Qed.
+    
+Corollary G_step_pres :
+  forall (s s': λ), step s s' -> Canonical.step (G s) (G s').
+Proof. intros s s' H0. apply g_step_pres. assumption. Qed.
+
