@@ -178,7 +178,7 @@ Section Compatibilty.
     comp t t' -> comp (LambApp t u l) (LambApp t' u l)
   | Comp_LambApp2 (t: {bind λc}) u u' l :
     comp u u' -> comp (LambApp t u l) (LambApp t u' l)
-  | Comp_mApp3 (t: {bind λc}) u l l' :
+  | Comp_LambApp3 (t: {bind λc}) u l l' :
     comp' l l' -> comp (LambApp t u l) (LambApp t u l')
   | Step_Base t t' : base t t' -> comp t t'
 
