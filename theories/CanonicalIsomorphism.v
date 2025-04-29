@@ -29,7 +29,7 @@ Fixpoint i (t: λc) : λm :=
 (* i e h são bijecções *)
 (* ------------------- *)
 
-Proposition bijection1 : forall (t: λm), is_canonical t -> i (h t) = t.
+Proposition inversion1 : forall (t: λm), is_canonical t -> i (h t) = t.
 Proof.
   intros t it.
   induction it using sim_is_canonical_ind
@@ -37,7 +37,7 @@ Proof.
     asimpl ; repeat f_equal ; auto.
 Qed.
 
-Proposition bijection2 : forall (t: λc), h (i t) = t.
+Proposition inversion2 : forall (t: λc), h (i t) = t.
 Proof.
   intros t.
   induction t using sim_λc_ind ; asimpl ; repeat f_equal ; auto.
@@ -155,10 +155,12 @@ Qed.
 Theorem h_step_pres :
   forall (t t': λm), step_can t t' -> is_canonical t -> Canonical.step (h t) (h t').
 Proof.
+  pose Canonical.step_is_compatible as H. destruct H.  
+  
   intros t t' H.
   induction H using LambdaM.sim_comp_ind
-    with (P0 := fun l1 l2 (_: step_can' l1 l2) => is_canonical_list l1 -> Canonical.step' (map h l1) (map h l2)) ; intro it ; inversion it ; subst ; asimpl.
-  - constructor. apply IHcomp. assumption.
+    with (P0 := fun l1 l2 (_: step_can' l1 l2) => is_canonical_list l1 -> Canonical.step' (map h l1) (map h l2)) ; intro it ; inversion it ; subst ; asimpl ; auto.
+  
   - (* temos hipóteses que são absurdas *)
     inversion H. inversion H0 ; inversion H5.
   - inversion H ; subst ; asimpl.
@@ -168,14 +170,6 @@ Proof.
         inversion H0 ; asimpl in H7 ; inversion H7.
     + (* temos hipóteses que são absurdas *)
       inversion H0 ; inversion H1.
-  - constructor.
-    apply IHcomp in H2. assumption.
-  - constructor.
-    apply IHcomp in H4. assumption.
-  - constructor.
-    apply IHcomp in H3. assumption.
-  - constructor.
-    apply IHcomp in H4. assumption.
   - (* temos hipóteses que são absurdas *)
     inversion b ; inversion H.
   - (* temos hipóteses que são absurdas *)
@@ -201,10 +195,6 @@ Proof.
         rewrite h_app_pres ; asimpl ; trivial.
         f_equal ; trivial.
         ** rewrite h_simple_subst. apply h_subst_pres ; auto.
-  - constructor.
-    apply IHcomp in H2. assumption.
-  - constructor.
-    apply IHcomp in H2. assumption.
 Qed.
 
 Theorem i_step_pres :

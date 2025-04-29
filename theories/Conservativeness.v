@@ -53,6 +53,7 @@ Proof.
   intros t t' s.
   induction s using Canonical.sim_comp_ind
     with (P0 := fun l l' (_: Canonical.step' l l') => LambdaM.multistep' (map i l) (map i l')) ; asimpl ; auto.
+
   - inversion b as [Beta1 | Beta2].
 
     (* reproduzir Beta1 em λm *)
@@ -144,8 +145,8 @@ Proof.
       * apply conservativeness1. assumption.
       * assumption.
   - intro H.
-    rewrite<- bijection2 with t.
-    rewrite<- bijection2 with t'.
+    rewrite<- inversion2 with t.
+    rewrite<- inversion2 with t'.
     induction H as [| t1 t2 t3].
     + constructor.
     + apply multistep_trans with (h t2).

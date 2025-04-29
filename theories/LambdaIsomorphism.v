@@ -30,6 +30,20 @@ Inductive step : relation λ :=
 | Step_App2 s t t': step t t' ->
                     step (App s t) (App s t').
 
+(*   F:   λc --> λ    *)
+(* ------------------ *)
+
+Fixpoint F (t: λc) : λ :=
+  match t with
+  | Vari x => Var x
+  | Lamb t => Lam (F t)
+  | VariApp x u l => fold_left (fun s0 t0 => App s0 (F t0)) (u::l) (Var x)
+  | LambApp t u l => fold_left (fun s0 t0 => App s0 (F t0)) (u::l) (Lam (F t))
+  end.
+
+Definition f (s: λ) (l: list λc) : λ := fold_left (fun s0 t0 => App s0 (F t0)) l s.
+Hint Unfold f : core.
+
 (*   G:   λ --> λc    *)
 (* ------------------ *)
 
@@ -48,20 +62,6 @@ Fixpoint g (s: λ) (l: list λc) : λc :=
 
 Definition G (s: λ) : λc := g s [].
 Hint Unfold G : core.
-
-(*   F:   λc --> λ    *)
-(* ------------------ *)
-
-Fixpoint F (t: λc) : λ :=
-  match t with
-  | Vari x => Var x
-  | Lamb t => Lam (F t)
-  | VariApp x u l => fold_left (fun s0 t0 => App s0 (F t0)) (u::l) (Var x)
-  | LambApp t u l => fold_left (fun s0 t0 => App s0 (F t0)) (u::l) (Lam (F t))
-  end.
-
-Definition f (s: λ) (l: list λc) : λ := fold_left (fun s0 t0 => App s0 (F t0)) l s.
-Hint Unfold f : core.
        
 (* Lemas complementares sobre g e h *)
 (* -------------------------------- *)
@@ -149,7 +149,7 @@ Qed.
 Lemma g_ren_pres :
   forall s l ξ, g s.[ren ξ] l..[ren ξ] = (g s l).[ren ξ].
 Proof.
-  induction s ; intros.
+  induction s as [x | s | s1 IHs1 s2 IHs2]; intros.
   - destruct l as [| u l] ; asimpl.
     + reflexivity.
     + apply g_is_multiapp.

@@ -149,9 +149,9 @@ Section StepSubstitution.
   Proof.
     intros s t H.
     induction H using sim_comp_ind
-      with (P0 := fun l l' (_: step' l l') =>
-                    forall σ, step' l..[σ] l'..[σ]) ;
+      with (P0 := fun l l' (_: step' l l') => forall σ, step' l..[σ] l'..[σ]) ;
       intros ; autounfold ; asimpl ; constructor ; try apply IHcomp.
+    
     - destruct b as [Beta | H].
       + destruct Beta as [Beta1 | Beta2 ].
         * induction Beta1. subst. left. left. constructor. autosubst.
