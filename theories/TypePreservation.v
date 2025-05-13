@@ -65,8 +65,6 @@ Proof.
     + eapply type_renaming ; eauto.
 Qed.        
 
-Check sim_comp_ind.
-
 Lemma beta1_type_preservation :
   forall t t', β1 t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A.
 Proof.
@@ -82,7 +80,22 @@ Qed.
 
 Lemma beta2_type_preservation :
   forall t t', β2 t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A.
-Admitted.
+Proof.
+  intros.
+  inversion H ; subst.
+  inversion H0 ; subst. (* decompor: mApp (Lam t0) u (v::l) *)
+  inversion H4 ; subst. (* decompor: Lam t0 *)
+  inversion H7 ; subst. (* decompor: v::l *)
+  inversion H10 ; subst. (* unificar: tipos A = B0 usando l *)
+  - econstructor ; eauto.
+    eapply type_substitution.
+    + eapply H3.
+    + destruct x ; asimpl ; eauto.
+  - econstructor ; eauto.
+    eapply type_substitution.
+    + eapply H3.
+    + destruct x ; asimpl ; eauto.
+Qed.
 
 Lemma app_is_admissible :
   forall Γ l l' A B C,
@@ -113,7 +126,8 @@ Theorem type_preservation :
   forall t t', step t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A.
 Proof.
   intros t t' H.
-  induction H using sim_comp_ind with (P0 := list_type_preservation) ; autounfold in * ; intros ;
+  induction H using sim_comp_ind with (P0 := list_type_preservation) ;
+    autounfold in * ; intros ;
     try (now inversion H ; econstructor ; eauto) ;
     try (now inversion H0 ; econstructor ; eauto).
     
