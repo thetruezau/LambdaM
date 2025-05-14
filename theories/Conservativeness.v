@@ -18,6 +18,13 @@ Proof.
     + apply IHclos_refl_trans_1n. assumption.
 Qed.
 
+Lemma mApp_multistep_to_app : forall t u l, LambdaM.multistep (mApp t u l) (app t u l).
+Proof.
+  destruct t ; intros ; asimpl ; try apply rt1n_refl.
+  - apply rt1n_trans with (mApp t1 t2 (l ++ u :: l0)) ; try apply rt1n_refl.
+    + constructor. right. constructor. reflexivity.
+Qed.
+
 Lemma two_subst_multistep :
   forall t, is_canonical t -> forall σ, is_canonical_subst σ -> LambdaM.multistep t.[σ] t.{σ}.
 Proof.
@@ -25,24 +32,17 @@ Proof.
 
   intros t it.
   induction it using sim_is_canonical_ind
-    with (P0 := fun l (_: is_canonical_list l) => forall σ, is_canonical_subst σ -> LambdaM.multistep' l..[σ] l..{σ}) ; intros ; asimpl ; try constructor ; auto.
-  - destruct (σ x) as [x0 | t | v u' l'] ; asimpl.
-    + apply multistep_trans with (mApp (Var x0) u.{σ} l..[σ]) ;
-        fold LambdaM.multistep ; auto.
-    + apply multistep_trans with (mApp (Lam t) u.{σ} l..[σ]) ;
-        fold LambdaM.multistep ; auto.
-    + apply rt1n_trans with (mApp v u' (l' ++ u.[σ] :: l..[σ])).
-      * constructor. right. constructor. reflexivity.
-      * apply comp_mApp3.
-        induction l' ; asimpl ; fold LambdaM.multistep' ; auto.
-        ** apply multistep_trans with (u.{σ} :: l..[σ]) ;
-             fold LambdaM.multistep' ; auto.
-  - apply multistep_trans with (mApp (Lam t.{up σ}) u.[σ] l..[σ]) ;
-      fold LambdaM.multistep ; auto.
-    + apply multistep_trans with (mApp (Lam t.{up σ}) u.{σ} l..[σ]) ;
-        fold LambdaM.multistep ; auto.
-  - apply multistep_trans with (u.{σ} :: l..[σ]) ;
-      fold LambdaM.multistep' ; auto.
+    with (P0 := fun l (_: is_canonical_list l) => forall σ, is_canonical_subst σ -> LambdaM.multistep' l..[σ] l..{σ}) ; intros ; asimpl ;
+    try constructor ; auto.
+
+  - eapply multistep_trans ; fold LambdaM.multistep ; eauto.
+    eapply multistep_trans ; fold LambdaM.multistep ; eauto.
+    apply mApp_multistep_to_app.
+
+  - eapply multistep_trans ; fold LambdaM.multistep ; eauto.
+    eapply multistep_trans ; fold LambdaM.multistep ; eauto.
+    
+  - eapply multistep_trans ; fold LambdaM.multistep' ; eauto.
 Qed.
 
 Lemma conservativeness1 :
@@ -92,7 +92,7 @@ Lemma h_subst_eq :
 Proof.
   induction t using sim_λm_ind ; intros ; asimpl.
   - reflexivity.
-  - f_equal. rewrite IHt. f_equal.
+  - f_equal. rewrite IHt. f_equal. 
     f_ext. induction x ; asimpl ; trivial. apply h_ren_pres.
   - assert (IHl : map h l..[σ] = (map h l)..[σ >>> h]).
     { induction H ; asimpl ; f_equal ; auto. }
@@ -110,6 +110,7 @@ Proof.
   - apply multistep_comp_app1. assumption.
   - apply multistep_comp_app2. assumption.
   - apply multistep_comp_app3. assumption.
+    
   - inversion b as [Beta | H].
 
     (* h preserva passos Beta *)

@@ -49,7 +49,7 @@ Proof.
 Qed.
 
 Hint Resolve app_is_closed : core.
-
+          
 Instance Subst_Canonical : Subst λm :=
   (fix inst (σ: var -> λm) (s: λm) : λm :=
      match s with

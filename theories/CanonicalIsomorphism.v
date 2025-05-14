@@ -172,7 +172,7 @@ Proof.
       inversion H0 ; inversion H1.
   - (* temos hipóteses que são absurdas *)
     inversion b ; inversion H.
-  - (* temos hipóteses que são absurdas *)
+  - (* temos hipóteses que são absurdas *) 
     inversion b ; inversion H0.
   - (* temos hipóteses que são absurdas *)
     inversion b ; inversion H1.
