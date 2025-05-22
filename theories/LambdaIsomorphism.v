@@ -1,34 +1,11 @@
 Require Import List.
+Require Import Lambda.
 Require Import Autosubst.Autosubst.
 Require Import Coq.Relations.Relation_Definitions.
-Require Import Coq.Relations.Relation_Operators.
 
 Require Import Canonical CanonicalIsomorphism.
 
 Import ListNotations.
-
-(* The usual λ-calculus *)
-(* -------------------- *)
-
-Inductive λ: Type :=
-| Var (x: var)
-| Lam (t: {bind λ})
-| App (s t: λ).
-
-Instance Ids_λ : Ids λ. derive. Defined.
-Instance Rename_λ : Rename λ. derive. Defined.
-Instance Subst_λ : Subst λ. derive. Defined.
-Instance SubstLemmas_λ : SubstLemmas λ. derive. Defined.
-
-Inductive step : relation λ :=
-| Step_Beta s s' t : s' = s.[t .: ids] ->
-                     step (App (Lam s) t) s'
-| Step_Abs s s' : step s s' ->
-                  step (Lam s) (Lam s')
-| Step_App1 s s' t: step s s' ->
-                    step (App s t) (App s' t)
-| Step_App2 s t t': step t t' ->
-                    step (App s t) (App s t').
 
 (*   F:   λc --> λ    *)
 (* ------------------ *)
@@ -91,6 +68,7 @@ Qed.
 Theorem inversion1 : forall t, G (F t) = t.
 Proof.
   induction t using sim_λc_ind.
+  (* dedicated induction principle *)
   - reflexivity.
   - asimpl. f_equal. assumption.
   - asimpl. fold (f (App (Var x) (F t)) l).
@@ -285,7 +263,7 @@ Qed.
 (* -------------------------------------------- *)
   
 Lemma g_step_pres :
-  forall s s', step s s' ->
+  forall s s', Lambda.step s s' ->
           forall l, Canonical.step (g s l) (g s' l).
 Proof.
   intros s s' H0. induction H0 ; intros ; subst.
@@ -306,11 +284,11 @@ Proof.
 Qed.
     
 Corollary G_step_pres :
-  forall (s s': λ), step s s' -> Canonical.step (G s) (G s').
+  forall (s s': λ), Lambda.step s s' -> Canonical.step (G s) (G s').
 Proof. intros s s' H0. apply g_step_pres. assumption. Qed.
   
 Lemma f_step_pres :
-  forall l (s s': λ), step s s' -> step (f s l) (f s' l).
+  forall l (s s': λ), Lambda.step s s' -> Lambda.step (f s l) (f s' l).
 Proof.
   induction l ; asimpl ; intros.
   - trivial.
@@ -319,15 +297,15 @@ Proof.
 Qed.
 
 Theorem F_step_pres :
-  forall (t t': λc), Canonical.step t t' -> step (F t) (F t').
+  forall (t t': λc), Canonical.step t t' -> Lambda.step (F t) (F t').
 Proof.
   assert (F_subst : forall s t, F s.[t/] = (F s).[F t/]).
   { intros s t. rewrite F_subst_pres.
     f_equal. f_ext. destruct x ; auto. }
   
   intros t t' H0. induction H0 using sim_comp_ind
-    with (P0 := fun l l' (_: step' l l') =>
-                  forall t, step (f t l) (f t l')) ;
+    with (P0 := fun l l' (_: Canonical.step' l l') =>
+                  forall t, Lambda.step (f t l) (f t l')) ;
     intros ; asimpl.
   - constructor. assumption.
   - apply f_step_pres. constructor. assumption.
@@ -342,4 +320,26 @@ Proof.
       apply f_step_pres. constructor. constructor. apply F_subst.
   - apply f_step_pres. constructor. assumption.
   - apply IHcomp.
+Qed.
+
+(* isomorphism at the level of types *)
+(* --------------------------------- *)
+
+Require Import SimpleTypes.
+
+Lemma g_admissable_rule Γ s A :
+  Lambda.sequent Γ s A ->
+    forall l B, list_sequent Γ A l B -> Canonical.sequent Γ (g s l) B.
+Proof.
+  intro H. induction H ; intros.
+  - inversion H0 ; subst ; asimpl ; eauto.
+  - inversion H0 ; subst ; asimpl ; eauto.
+  - asimpl. eauto.
+Qed.  
+  
+Theorem G_admissable_rule Γ s A :
+  Lambda.sequent Γ s A -> Canonical.sequent Γ (G s) A.
+Proof.
+  intro H. induction H ; asimpl ; auto.
+  - eapply g_admissable_rule ; eauto.
 Qed.

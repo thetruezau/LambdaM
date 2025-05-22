@@ -362,3 +362,35 @@ Section StepSubstitution.
   Qed.
 
 End StepSubstitution.
+
+(* Typing Rules *)
+(* ------------ *)
+
+Require Import SimpleTypes.
+
+Inductive sequent (Γ: var->type) : λc -> type -> Prop := 
+| varAxiom (x: var) (A: type) :
+  Γ x = A -> sequent Γ (Vari x) A
+
+| Right (t: λc) (A B: type) :
+  sequent (A .: Γ) t B -> sequent Γ (Lamb t) (Arr A B)
+                                 
+| Left (x: var) (u: λc) (l: list λc) (A B C: type) :
+  Γ x = (Arr A B) -> sequent Γ u A -> list_sequent Γ B l C ->
+  sequent Γ (VariApp x u l) C
+
+| KeyCut (t: {bind λc}) (u: λc) (l: list λc) (A B C: type) :
+  sequent (A .: Γ) t B -> sequent Γ u A -> list_sequent Γ B l C ->
+  sequent Γ (LambApp t u l) C
+
+with list_sequent (Γ:var->type) : type -> (list λc) -> type -> Prop :=
+| nilAxiom (C: type) : list_sequent Γ C [] C
+
+| Lft (u: λc) (l: list λc) (A B C:type) :
+  sequent Γ u A -> list_sequent Γ B l C ->
+  list_sequent Γ (Arr A B) (u :: l) C.
+
+Hint Constructors sequent list_sequent : core.
+
+Scheme sim_sequent_ind := Induction for sequent Sort Prop
+  with sim_list_sequent_ind := Induction for list_sequent Sort Prop.

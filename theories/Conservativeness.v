@@ -140,7 +140,8 @@ Theorem conservativeness :
   forall (t t': λc), Canonical.multistep t t' <-> LambdaM.multistep (i t) (i t').
 Proof.
   split.
-  - induction 1 as [| t1 t2 t3].
+  - intro H.
+    induction H as [| t1 t2 t3].
     + constructor.
     + apply multistep_trans with (i t2).
       * apply conservativeness1. assumption.

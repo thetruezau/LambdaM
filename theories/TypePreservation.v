@@ -1,39 +1,8 @@
 Require Import List.
-Require Import LambdaM.
+Require Import SimpleTypes LambdaM.
 Require Import Autosubst.Autosubst.
 
 Import ListNotations.
-
-(* Simple Types *)
-(* ------------ *)
-
-Inductive type: Type := Base | Arr : type -> type -> type.
-
-(* Typing Rules *)
-(* ------------ *)
-
-Inductive sequent (Γ: var->type) : λm -> type -> Prop := 
-| varAxiom (x: var) (A: type) :
-  Γ x = A -> sequent Γ (Var x) A
-
-| Right (t: λm) (A B: type) :
-  sequent (A .: Γ) t B -> sequent Γ (Lam t) (Arr A B)
-
-| HeadCut (t u: λm) (l: list λm) (A B C: type) :
-  sequent Γ t (Arr A B) -> sequent Γ u A -> list_sequent Γ B l C ->
-  sequent Γ (mApp t u l) C
-
-with list_sequent (Γ:var->type) : type -> (list λm) -> type -> Prop :=
-| nilAxiom (C: type) : list_sequent Γ C [] C
-
-| Lft (u: λm) (l: list λm) (A B C:type) :
-  sequent Γ u A -> list_sequent Γ B l C ->
-  list_sequent Γ (Arr A B) (u :: l) C.
-
-Hint Constructors sequent list_sequent : core.
-
-Scheme sim_sequent_ind := Induction for sequent Sort Prop
-  with sim_list_sequent_ind := Induction for list_sequent Sort Prop.
 
 (* Subst and Ren Lemmas *)
 (* -------------------- *)
