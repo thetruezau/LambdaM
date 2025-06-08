@@ -1,16 +1,15 @@
 Require Import List.
-Require Import Lambda.
 Require Import Autosubst.Autosubst.
 Require Import Coq.Relations.Relation_Definitions.
 
-Require Import Canonical CanonicalIsomorphism.
+Require Import Lambda Canonical CanonicalIsomorphism.
 
 Import ListNotations.
 
 (*   F:   λc --> λ    *)
 (* ------------------ *)
 
-Fixpoint F (t: λc) : λ :=
+Fixpoint F (t: Canonical.term) : Lambda.term :=
   match t with
   | Vari x => Var x
   | Lamb t => Lam (F t)
@@ -18,13 +17,13 @@ Fixpoint F (t: λc) : λ :=
   | LambApp t u l => fold_left (fun s0 t0 => App s0 (F t0)) (u::l) (Lam (F t))
   end.
 
-Definition f (s: λ) (l: list λc) : λ := fold_left (fun s0 t0 => App s0 (F t0)) l s.
+Definition f (s: Lambda.term) (l: list Canonical.term) : Lambda.term := fold_left (fun s0 t0 => App s0 (F t0)) l s.
 Hint Unfold f : core.
 
 (*   G:   λ --> λc    *)
 (* ------------------ *)
 
-Fixpoint g (s: λ) (l: list λc) : λc :=
+Fixpoint g (s: Lambda.term) (l: list Canonical.term) : Canonical.term :=
   match s with
   | Var x => match l with
             | [] => Vari x
@@ -37,7 +36,7 @@ Fixpoint g (s: λ) (l: list λc) : λc :=
   | App s t => g s ((g t [])::l)
   end.
 
-Definition G (s: λ) : λc := g s [].
+Definition G (s: Lambda.term) : Canonical.term := g s [].
 Hint Unfold G : core.
        
 (* Lemas complementares sobre g e h *)
@@ -67,7 +66,7 @@ Qed.
 
 Theorem inversion1 : forall t, G (F t) = t.
 Proof.
-  induction t using sim_λc_ind.
+  induction t using Canonical.sim_term_ind.
   (* dedicated induction principle *)
   - reflexivity.
   - asimpl. f_equal. assumption.
@@ -167,7 +166,7 @@ Qed.
 Lemma F_ren_pres :
   forall s ξ, F s.[ren ξ] = (F s).[ren ξ].
 Proof.
-  induction s using sim_λc_ind ; intros ; asimpl.
+  induction s using Canonical.sim_term_ind ; intros ; asimpl.
   - reflexivity.
   - f_equal. apply IHs.
   - fold (f (App (Var x) (F s)) l). simpl.
@@ -238,7 +237,7 @@ Qed.
 Theorem F_subst_pres :
   forall s σ, F s.[σ] = (F s).[σ >>> F].
 Proof.
-  induction s using sim_λc_ind ; intros ; asimpl.
+  induction s using Canonical.sim_term_ind ; intros ; asimpl.
   - reflexivity.
   - f_equal. rewrite up_sigma_F. apply IHs.
   - fold (f (App (Var x) (F s)) l).
@@ -284,11 +283,11 @@ Proof.
 Qed.
     
 Corollary G_step_pres :
-  forall (s s': λ), Lambda.step s s' -> Canonical.step (G s) (G s').
+  forall s s', Lambda.step s s' -> Canonical.step (G s) (G s').
 Proof. intros s s' H0. apply g_step_pres. assumption. Qed.
   
 Lemma f_step_pres :
-  forall l (s s': λ), Lambda.step s s' -> Lambda.step (f s l) (f s' l).
+  forall l s s', Lambda.step s s' -> Lambda.step (f s l) (f s' l).
 Proof.
   induction l ; asimpl ; intros.
   - trivial.
@@ -297,7 +296,7 @@ Proof.
 Qed.
 
 Theorem F_step_pres :
-  forall (t t': λc), Canonical.step t t' -> Lambda.step (F t) (F t').
+  forall (t t': Canonical.term), Canonical.step t t' -> Lambda.step (F t) (F t').
 Proof.
   assert (F_subst : forall s t, F s.[t/] = (F s).[F t/]).
   { intros s t. rewrite F_subst_pres.

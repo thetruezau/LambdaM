@@ -8,14 +8,14 @@ Import ListNotations.
 (* ---------------- *)
 (* termos canónicos *)
 
-Inductive λc: Type :=
+Inductive term: Type :=
 | Vari (x: var)
-| Lamb (t: {bind λc})
-| VariApp (x: var) (u: λc) (l: list λc)
-| LambApp (t: {bind λc}) (u: λc) (l: list λc).
+| Lamb (t: {bind term})
+| VariApp (x: var) (u: term) (l: list term)
+| LambApp (t: {bind term}) (u: term) (l: list term).
 
-Section simultaneous_induction_principle.
-  Variable P : λc -> Prop.
+Section dedicated_induction_principle.
+  Variable P : term -> Prop.
 
   Hypothesis HVari : forall x, P (Vari x).
   Hypothesis HLamb : forall t, P t -> P (Lamb t).
@@ -24,7 +24,7 @@ Section simultaneous_induction_principle.
   Hypothesis HLambApp : forall t u l, P t -> P u -> Forall P l ->
                                  P (LambApp t u l).
 
-  Proposition sim_λc_ind : forall t, P t.
+  Proposition sim_term_ind : forall t, P t.
   Proof.
     fix rec 1. destruct t.
     - apply HVari.
@@ -43,9 +43,9 @@ Section simultaneous_induction_principle.
         * apply Forall_cons ; [ apply rec | apply rec' ].
         * apply H.
   Qed.
-End simultaneous_induction_principle.
+End dedicated_induction_principle.
 
-Definition app (t u: λc) (l: list λc): λc :=
+Definition app (t u: term) (l: list term): term :=
   match t with
   | Vari x => VariApp x u l
   | Lamb t' => LambApp t' u l
@@ -58,12 +58,12 @@ Notation "t '@(' u ',' l ')'" := (app t u l) (at level 9).
 (* substituição *)
 (* ------------ *)
 
-Instance Ids_λc : Ids λc. derive. Defined.
-Instance Rename_λc : Rename λc. derive. Defined.
-Instance Subst_λc : Subst λc. 
+Instance Ids_term : Ids term. derive. Defined.
+Instance Rename_term : Rename term. derive. Defined.
+Instance Subst_term : Subst term. 
 Proof.
-  unfold Subst. fix inst 2. change _ with (Subst λc) in inst.
-  intros σ s. change (annot λc s). destruct s.
+  unfold Subst. fix inst 2. change _ with (Subst term) in inst.
+  intros σ s. change (annot term s). destruct s.
   - exact (σ x).
   - exact (Lamb (subst (up σ) t)).
   - exact ((σ x)@(subst σ s, mmap (subst σ) l)).
@@ -72,7 +72,7 @@ Defined.
 
 Lemma rename_subst : forall s xi, rename xi s = s.[ren xi].
 Proof.
-  induction s using sim_λc_ind ; intros ; simpl ; f_equal ;
+  induction s using sim_term_ind ; intros ; simpl ; f_equal ;
     try rewrite up_upren_internal ; auto.
   - induction H ; asimpl ; f_equal ; auto.
   - induction H ; asimpl ; f_equal ; auto.
@@ -80,7 +80,7 @@ Qed.
 
 Lemma subst_id : forall s, s.[ids] = id s.
 Proof.
-  induction s using sim_λc_ind ; intros ; simpl ; f_equal ;
+  induction s using sim_term_ind ; intros ; simpl ; f_equal ;
     try rewrite up_id_internal ; auto.
   - induction H ; asimpl ; f_equal ; auto.
   - induction H ; asimpl ; f_equal ; auto.
@@ -89,7 +89,7 @@ Qed.
 Lemma ren_subst_comp :
   forall s xi sigma, (rename xi s).[sigma] = s.[xi >>> sigma].
 Proof.
-  induction s using sim_λc_ind ; intros ; simpl ; f_equal ;
+  induction s using sim_term_ind ; intros ; simpl ; f_equal ;
     try rewrite up_comp_ren_subst ; auto.
   - induction H ; msimpl ; f_equal ; auto.
   - induction H ; msimpl ; f_equal ; auto.
@@ -105,7 +105,7 @@ Hint Resolve mmap_append : core.
   
 Lemma app_subst_comm : forall t u l σ, (t@(u,l)).[σ] = t.[σ]@(u.[σ], l..[σ]).
 Proof.
-  induction t using sim_λc_ind ; intros ; asimpl.
+  induction t using sim_term_ind ; intros ; asimpl.
   - reflexivity.
   - f_equal.
   - destruct (σ x) ; asimpl ; f_equal.
@@ -123,7 +123,7 @@ Qed.
 Lemma subst_ren_comp :
   forall s xi sigma, rename xi s.[sigma] = s.[sigma >>> rename xi].
 Proof.
-  induction s using sim_λc_ind ; intros ; asimpl ; f_equal ; auto.
+  induction s using sim_term_ind ; intros ; asimpl ; f_equal ; auto.
   - rewrite up_comp_subst_ren_internal ; auto.
     + intros. apply rename_subst.
     + intros. apply ren_subst_comp.
@@ -142,7 +142,7 @@ Qed.
 Lemma subst_comp :
   forall s sigma tau, s.[sigma].[tau] = s.[sigma >> tau].
 Proof.
-  induction s using sim_λc_ind ; intros ; asimpl ; f_equal ; auto.
+  induction s using sim_term_ind ; intros ; asimpl ; f_equal ; auto.
   - rewrite up_comp_internal ; auto.
     + intros. apply ren_subst_comp.
     + intros. apply subst_ren_comp.
@@ -154,7 +154,7 @@ Proof.
   - induction H ; msimpl ; f_equal ; auto.
 Qed.
     
-Instance SubstLemmas_λc : SubstLemmas λc.
+Instance SubstLemmas_term : SubstLemmas term.
 Proof.
   constructor.
   - intros. apply rename_subst.
@@ -165,24 +165,24 @@ Qed.
     
 Section Compatibilty.
 
-  Variable base : relation λc.
+  Variable base : relation term.
   
-  Inductive comp : relation λc :=
-  | Comp_Lamb (t t': {bind λc}) :
+  Inductive comp : relation term :=
+  | Comp_Lamb (t t': {bind term}) :
     comp t t' -> comp (Lamb t) (Lamb t')
   | Comp_VariApp1 x u u' l :
     comp u u' -> comp (VariApp x u l) (VariApp x u' l)
   | Comp_VariApp2 x u l l' :
     comp' l l' -> comp (VariApp x u l) (VariApp x u l')
-  | Comp_LambApp1 (t t': {bind λc}) u l :
+  | Comp_LambApp1 (t t': {bind term}) u l :
     comp t t' -> comp (LambApp t u l) (LambApp t' u l)
-  | Comp_LambApp2 (t: {bind λc}) u u' l :
+  | Comp_LambApp2 (t: {bind term}) u u' l :
     comp u u' -> comp (LambApp t u l) (LambApp t u' l)
-  | Comp_LambApp3 (t: {bind λc}) u l l' :
+  | Comp_LambApp3 (t: {bind term}) u l l' :
     comp' l l' -> comp (LambApp t u l) (LambApp t u l')
   | Step_Base t t' : base t t' -> comp t t'
 
-  with comp' : relation (list λc) :=
+  with comp' : relation (list term) :=
   | Comp_Head u u' l : comp u u' -> comp' (u::l) (u'::l)
   | Comp_Tail u l l' : comp' l l' -> comp' (u::l) (u::l').
 
@@ -195,16 +195,16 @@ Hint Constructors comp comp' : core.
 
 Section IsCompatible.
 
-  Variable R : relation λc.
-  Variable R' : relation (list λc).
+  Variable R : relation term.
+  Variable R' : relation (list term).
 
   Record is_compatible := {
-    comp_lamb : forall t t': {bind λc}, R t t' -> R (Lamb t) (Lamb t') ;
+    comp_lamb : forall t t': {bind term}, R t t' -> R (Lamb t) (Lamb t') ;
     comp_variApp1 : forall x u u' l, R u u' -> R (VariApp x u l) (VariApp x u' l) ;
     comp_variApp2 : forall x u l l', R' l l' -> R (VariApp x u l) (VariApp x u l') ;
-    comp_lambApp1 : forall (t t': {bind λc}) u l, R t t' -> R (LambApp t u l) (LambApp t' u l) ;
-    comp_lambApp2 : forall (t: {bind λc}) u u' l, R u u' -> R (LambApp t u l) (LambApp t u' l) ;
-    comp_lambApp3 : forall (t: {bind λc}) u l l', R' l l' -> R (LambApp t u l) (LambApp t u l') ;
+    comp_lambApp1 : forall (t t': {bind term}) u l, R t t' -> R (LambApp t u l) (LambApp t' u l) ;
+    comp_lambApp2 : forall (t: {bind term}) u u' l, R u u' -> R (LambApp t u l) (LambApp t u' l) ;
+    comp_lambApp3 : forall (t: {bind term}) u l l', R' l l' -> R (LambApp t u l) (LambApp t u l') ;
     comp_head : forall u u' l, R u u' -> R' (u::l) (u'::l) ;
     comp_tail : forall u l l', R' l l' -> R' (u::l) (u::l')
     }.
@@ -222,12 +222,12 @@ Qed.
 (* Redução em λm *)
 (* ------------- *)
 
-Inductive β1: relation λc :=
-| Step_Beta1 (t: {bind λc}) (t' u: λc) :
+Inductive β1: relation term :=
+| Step_Beta1 (t: {bind term}) (t' u: term) :
   t' = t.[u .: ids] -> β1 (LambApp t u []) t'.
 
-Inductive β2: relation λc :=
-| Step_Beta2 (t: {bind λc}) (t' u v: λc) l :
+Inductive β2: relation term :=
+| Step_Beta2 (t: {bind term}) (t' u v: term) l :
   t' = t.[u .: ids]@(v,l) -> β2 (LambApp t u (v::l)) t'.
 
 Definition step := comp (union _ β1 β2).
@@ -368,25 +368,25 @@ End StepSubstitution.
 
 Require Import SimpleTypes.
 
-Inductive sequent (Γ: var->type) : λc -> type -> Prop := 
+Inductive sequent (Γ: var->type) : term -> type -> Prop := 
 | varAxiom (x: var) (A: type) :
   Γ x = A -> sequent Γ (Vari x) A
 
-| Right (t: λc) (A B: type) :
+| Right (t: term) (A B: type) :
   sequent (A .: Γ) t B -> sequent Γ (Lamb t) (Arr A B)
                                  
-| Left (x: var) (u: λc) (l: list λc) (A B C: type) :
+| Left (x: var) (u: term) (l: list term) (A B C: type) :
   Γ x = (Arr A B) -> sequent Γ u A -> list_sequent Γ B l C ->
   sequent Γ (VariApp x u l) C
 
-| KeyCut (t: {bind λc}) (u: λc) (l: list λc) (A B C: type) :
+| KeyCut (t: {bind term}) (u: term) (l: list term) (A B C: type) :
   sequent (A .: Γ) t B -> sequent Γ u A -> list_sequent Γ B l C ->
   sequent Γ (LambApp t u l) C
 
-with list_sequent (Γ:var->type) : type -> (list λc) -> type -> Prop :=
+with list_sequent (Γ:var->type) : type -> (list term) -> type -> Prop :=
 | nilAxiom (C: type) : list_sequent Γ C [] C
 
-| Lft (u: λc) (l: list λc) (A B C:type) :
+| Lft (u: term) (l: list term) (A B C:type) :
   sequent Γ u A -> list_sequent Γ B l C ->
   list_sequent Γ (Arr A B) (u :: l) C.
 

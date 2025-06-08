@@ -46,7 +46,7 @@ Proof.
 Qed.
 
 Lemma conservativeness1 :
-  forall (t t': λc), Canonical.step t t' -> LambdaM.multistep (i t) (i t').
+  forall (t t': Canonical.term), Canonical.step t t' -> LambdaM.multistep (i t) (i t').
 Proof.
   pose LambdaM.multistep_is_compatible as H. destruct H.
   
@@ -79,18 +79,18 @@ Proof.
            *** autounfold.
                destruct x ; asimpl ; [apply i_image_is_canonical | constructor].
         ** destruct (t0.[u/]) ; asimpl in * ; subst ; try apply rt1n_refl.
-           *** apply rt1n_trans with (mApp (Var x) (i λ) (map i (l0 ++ v :: l))).
+           *** apply rt1n_trans with (mApp (Var x) (i t) (map i (l0 ++ v :: l))).
                **** constructor. right. constructor. apply map_app.
                **** constructor.
-           *** apply rt1n_trans with (mApp (Lam (i t)) (i λ) (map i (l0 ++ v :: l))).
+           *** apply rt1n_trans with (mApp (Lam (i t)) (i t1) (map i (l0 ++ v :: l))).
                **** constructor. right. constructor. apply map_app.
                **** constructor.
 Qed.
 
 Lemma h_subst_eq :
-  forall (t: λm) σ, h t.[σ] = (h t).[σ >>> h].
+  forall (t: LambdaM.term) σ, h t.[σ] = (h t).[σ >>> h].
 Proof.
-  induction t using sim_λm_ind ; intros ; asimpl.
+  induction t using LambdaM.sim_term_ind ; intros ; asimpl.
   - reflexivity.
   - f_equal. rewrite IHt. f_equal. 
     f_ext. induction x ; asimpl ; trivial. apply h_ren_pres.
@@ -100,7 +100,7 @@ Proof.
 Qed.
 
 Lemma conservativeness2 :
-  forall (t t': λm), LambdaM.step t t' -> Canonical.multistep (h t) (h t'). 
+  forall (t t': LambdaM.term), LambdaM.step t t' -> Canonical.multistep (h t) (h t'). 
 Proof.
   pose Canonical.multistep_is_compatible as H. destruct H.
   
@@ -137,7 +137,7 @@ Qed.
 (* --------------------------- *)
 
 Theorem conservativeness :
-  forall (t t': λc), Canonical.multistep t t' <-> LambdaM.multistep (i t) (i t').
+  forall t t', Canonical.multistep t t' <-> LambdaM.multistep (i t) (i t').
 Proof.
   split.
   - intro H.

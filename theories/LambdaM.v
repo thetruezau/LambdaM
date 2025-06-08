@@ -8,22 +8,20 @@ Import ListNotations.
 (* Sintaxe *)
 (* ------- *)
 
-Inductive λm: Type :=
+Inductive term: Type :=
 | Var (x: var)
-| Lam (t: {bind λm})
-| mApp (t: λm) (u: λm) (l: list λm).
+| Lam (t: {bind term})
+| mApp (t: term) (u: term) (l: list term).
 
-Hint Constructors λm : core.
-
-Section simultaneous_induction_principle.
-  Variable P : λm -> Prop.
+Section dedicated_induction_principle.
+  Variable P : term -> Prop.
 
   Hypothesis HVar : forall x, P (Var x).
   Hypothesis HLam : forall t, P t -> P (Lam t).
   Hypothesis HmApp : forall t u l, P t -> P u -> Forall P l ->
                                    P (mApp t u l).
 
-  Proposition sim_λm_ind : forall t, P t.
+  Proposition sim_term_ind : forall t, P t.
   Proof.
     fix rec 1. destruct t.
     - apply HVar.
@@ -36,26 +34,26 @@ Section simultaneous_induction_principle.
         * apply Forall_cons ; [ apply rec | apply rec' ].
         * apply H.
   Qed.
-End simultaneous_induction_principle.
+End dedicated_induction_principle.
 
 (* Substituição *)
 (* ------------ *)
 
-Instance Ids_λm : Ids λm. derive. Defined.
-Instance Rename_λm : Rename λm. derive. Defined.
-Instance Subst_λm : Subst λm. derive. Defined.
-Instance SubstLemmas_λm : SubstLemmas λm. derive. Defined.
+Instance Ids_term : Ids term. derive. Defined.
+Instance Rename_term : Rename term. derive. Defined.
+Instance Subst_term : Subst term. derive. Defined.
+Instance SubstLemmas_term : SubstLemmas term. derive. Defined.
 
 (* Definição de compatibilidade em λm *)
 (* ---------------------------------- *)
 
 Section Compatibilty.
 
-  Variable base : relation λm.
+  Variable base : relation term.
   
-  Inductive comp : relation λm :=
-  | Comp_Lam (t t': {bind λm}) : comp t t' ->
-                                 comp (Lam t) (Lam t')
+  Inductive comp : relation term :=
+  | Comp_Lam (t t': {bind term}) : comp t t' ->
+                                   comp (Lam t) (Lam t')
   | Comp_mApp1 t t' u l : comp t t' ->
                           comp (mApp t u l) (mApp t' u l)
   | Comp_mApp2 t u u' l : comp u u' ->
@@ -64,7 +62,7 @@ Section Compatibilty.
                           comp (mApp t u l) (mApp t u l')
   | Step_Base t t' : base t t' -> comp t t'
 
-  with comp' : relation (list λm) :=
+  with comp' : relation (list term) :=
   | Comp_Head u u' l : comp u u' -> comp' (u::l) (u'::l)
   | Comp_Tail u l l' : comp' l l' -> comp' (u::l) (u::l').
 
@@ -75,11 +73,11 @@ End Compatibilty.
 
 Section IsCompatible.
 
-  Variable R : relation λm.
-  Variable R' : relation (list λm).
+  Variable R : relation term.
+  Variable R' : relation (list term).
 
   Record is_compatible := {
-      comp_lam : forall t t': {bind λm}, R t t' -> R (Lam t) (Lam t') ;
+      comp_lam : forall t t': {bind term}, R t t' -> R (Lam t) (Lam t') ;
       comp_mApp1 : forall t t' u l, R t t' -> R (mApp t u l) (mApp t' u l) ;
       comp_mApp2 : forall t u u' l, R u u' -> R (mApp t u l) (mApp t u' l) ;
       comp_mApp3 : forall t u l l', R' l l' -> R (mApp t u l) (mApp t u l') ;
@@ -101,16 +99,16 @@ Qed.
 (* Redução em λm *)
 (* ------------- *)
 
-Inductive β1: relation λm :=
-| Step_Beta1 (t: {bind λm}) (t' u: λm) :
+Inductive β1: relation term :=
+| Step_Beta1 (t: {bind term}) (t' u: term) :
   t' = t.[u .: ids] -> β1 (mApp (Lam t) u []) t'.
 
-Inductive β2: relation λm :=
-| Step_Beta2 (t: {bind λm}) (t' u v: λm) l :
+Inductive β2: relation term :=
+| Step_Beta2 (t: {bind term}) (t' u v: term) l :
   t' = t.[u .: ids] -> β2 (mApp (Lam t) u (v::l)) (mApp t' v l).
 
-Inductive H: relation λm :=       
-| Step_H (t u u': λm) l l' l'' :
+Inductive H: relation term :=       
+| Step_H (t u u': term) l l' l'' :
   l'' = l ++ (u'::l') -> H (mApp (mApp t u l) u' l') (mApp t u l'').
 
 Definition step := comp (union _ (union _ β1 β2) H).
@@ -136,13 +134,13 @@ Qed.
 
 Section StepSubstitution.
 
-  Lemma mmap_append (l1 l2: list λm) (f: λm -> λm) :
+  Lemma mmap_append (l1 l2: list term) (f: term -> term) :
     mmap f (l1 ++ l2) = (mmap f l1) ++ (mmap f l2).
   Proof.
     induction l1 ; asimpl ; try rewrite IHl1 ; auto.
   Qed.
 
-  Hint Resolve mmap_append : core.
+  Local Hint Resolve mmap_append : core.
 
   Lemma step_subst :
     forall s t, step s t -> forall σ, step s.[σ] t.[σ].
@@ -166,21 +164,21 @@ End StepSubstitution.
 
 Require Import SimpleTypes.
 
-Inductive sequent (Γ: var->type) : λm -> type -> Prop := 
+Inductive sequent (Γ: var->type) : term -> type -> Prop := 
 | varAxiom (x: var) (A: type) :
   Γ x = A -> sequent Γ (Var x) A
 
-| Right (t: λm) (A B: type) :
+| Right (t: term) (A B: type) :
   sequent (A .: Γ) t B -> sequent Γ (Lam t) (Arr A B)
 
-| HeadCut (t u: λm) (l: list λm) (A B C: type) :
+| HeadCut (t u: term) (l: list term) (A B C: type) :
   sequent Γ t (Arr A B) -> sequent Γ u A -> list_sequent Γ B l C ->
   sequent Γ (mApp t u l) C
 
-with list_sequent (Γ:var->type) : type -> (list λm) -> type -> Prop :=
+with list_sequent (Γ:var->type) : type -> (list term) -> type -> Prop :=
 | nilAxiom (C: type) : list_sequent Γ C [] C
 
-| Lft (u: λm) (l: list λm) (A B C:type) :
+| Lft (u: term) (l: list term) (A B C:type) :
   sequent Γ u A -> list_sequent Γ B l C ->
   list_sequent Γ (Arr A B) (u :: l) C.
 

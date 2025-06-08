@@ -90,7 +90,7 @@ Proof.
     + destruct x ; asimpl ; eauto.
 Qed.
   
-Definition list_type_preservation (l l': list λc) (_: step' l l') :=
+Definition list_type_preservation (l l': list term) (_: step' l l') :=
   forall Γ A B, list_sequent Γ A l B -> list_sequent Γ A l' B.
 
 Hint Unfold list_type_preservation : core.

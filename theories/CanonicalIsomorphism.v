@@ -9,7 +9,7 @@ Import ListNotations.
 
 (* Projecção de λm em λc *)
 
-Fixpoint h (t: λm) : λc :=
+Fixpoint h (t: LambdaM.term) : Canonical.term :=
   match t with
   | Var x => Vari x
   | Lam t' => Lamb (h t')
@@ -18,7 +18,7 @@ Fixpoint h (t: λm) : λc :=
 
 (* Injecção de λc em λm *)
 
-Fixpoint i (t: λc) : λm :=
+Fixpoint i (t: Canonical.term) : LambdaM.term :=
   match t with
   | Vari x => Var x
   | Lamb t' => Lam (i t')
@@ -29,7 +29,7 @@ Fixpoint i (t: λc) : λm :=
 (* i e h são bijecções *)
 (* ------------------- *)
 
-Proposition inversion1 : forall (t: λm), is_canonical t -> i (h t) = t.
+Proposition inversion1 : forall (t: LambdaM.term), is_canonical t -> i (h t) = t.
 Proof.
   intros t it.
   induction it using sim_is_canonical_ind
@@ -37,10 +37,10 @@ Proof.
     asimpl ; repeat f_equal ; auto.
 Qed.
 
-Proposition inversion2 : forall (t: λc), h (i t) = t.
+Proposition inversion2 : forall (t: Canonical.term), h (i t) = t.
 Proof.
   intros t.
-  induction t using sim_λc_ind ; asimpl ; repeat f_equal ; auto.
+  induction t using Canonical.sim_term_ind ; asimpl ; repeat f_equal ; auto.
   all: induction H ; asimpl ; f_equal ; auto.
 Qed.
 
@@ -72,7 +72,7 @@ Qed.
 Lemma h_ren_pres :
   forall t ξ, h t.[ren ξ] = (h t).[ren ξ].
 Proof.
-  induction t using sim_λm_ind ; intros ; asimpl.
+  induction t using LambdaM.sim_term_ind ; intros ; asimpl.
   - reflexivity.
   - f_equal. trivial.
   - rewrite app_subst_pres. f_equal ; trivial.
@@ -98,13 +98,13 @@ Lemma i_app_pres :
   forall t u l, i (t@(u,l)) = app (i t) (i u) (map i l).
 Proof.
   intros t u l.
-  induction t using sim_λc_ind ; asimpl ; f_equal ; apply map_app.
+  induction t using Canonical.sim_term_ind ; asimpl ; f_equal ; apply map_app.
 Qed.
 
 Lemma i_ren_pres :
   forall t, forall ξ, i t.[ren ξ] = (i t).[ren ξ].
 Proof.
-  induction t using sim_λc_ind ; intros ; asimpl ;
+  induction t using Canonical.sim_term_ind ; intros ; asimpl ;
     repeat rewrite up_upren_internal ; simpl ; f_equal ; auto.
   all: induction H ; asimpl ; f_equal ; auto.
 Qed.
@@ -121,7 +121,7 @@ Proof. intro u. f_ext. destruct x ; reflexivity. Qed.
 (* ------------------------------------- *)
 
 Theorem h_subst_pres :
-  forall (t: λm), is_canonical t ->
+  forall (t: LambdaM.term), is_canonical t ->
              forall σ, is_canonical_subst σ -> h (t.{σ}) = (h t).[σ >>> h].
 Proof.
   intros t it.
@@ -137,9 +137,9 @@ Proof.
 Qed.
 
 Theorem i_subst_pres :
-  forall (t: λc), forall σ, i t.[σ] = (i t).{σ >>> i}.
+  forall (t: Canonical.term), forall σ, i t.[σ] = (i t).{σ >>> i}.
 Proof.
-  induction t using sim_λc_ind ; intros ; asimpl ; repeat f_equal ; auto.
+  induction t using Canonical.sim_term_ind ; intros ; asimpl ; repeat f_equal ; auto.
   - rewrite IHt. f_equal. f_ext.
     destruct x ; asimpl ; auto.
   - rewrite i_app_pres. f_equal ; auto.
@@ -153,7 +153,7 @@ Qed.
 (* -------------------------------------------- *)
 
 Theorem h_step_pres :
-  forall (t t': λm), step_can t t' -> is_canonical t -> Canonical.step (h t) (h t').
+  forall (t t': LambdaM.term), step_can t t' -> is_canonical t -> Canonical.step (h t) (h t').
 Proof.
   pose Canonical.step_is_compatible as H. destruct H.  
   
@@ -198,7 +198,7 @@ Proof.
 Qed.
 
 Theorem i_step_pres :
-  forall (t t': λc), Canonical.step t t' -> step_can (i t) (i t').
+  forall (t t': Canonical.term), Canonical.step t t' -> step_can (i t) (i t').
 Proof.
   intros t t' H.
   induction H using Canonical.sim_comp_ind
@@ -220,7 +220,7 @@ Qed.
 Lemma i_image_is_canonical : forall t, is_canonical (i t).
 Proof.
   intro t.
-  induction t using sim_λc_ind ; asimpl ; auto.
+  induction t using Canonical.sim_term_ind ; asimpl ; auto.
   - constructor.
     + assumption.
     + induction H ; asimpl ; constructor ; assumption.

@@ -47,7 +47,7 @@ Proof.
   inversion H7 ; subst. (* unificar: tipos A = B usando [] *)
   eapply type_substitution.
   - eapply H3.
-  - destruct x ; asimpl ; eauto.
+  - destruct x ; asimpl ; auto.
 Qed.
 
 Lemma beta2_type_preservation :
@@ -88,20 +88,23 @@ Proof.
   - eapply append_is_admissible ; eauto.
 Qed.    
   
-Definition list_type_preservation (l l': list λm) (_: step' l l') :=
+Definition list_type_preservation (l l': list term) (_: step' l l') :=
   forall Γ A B, list_sequent Γ A l B -> list_sequent Γ A l' B.
 
 Hint Unfold list_type_preservation : core.
 
-Theorem type_preservation : 
-  forall t t', step t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A.
+(* type_preservation : forall t t', step t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A. *)
+
+Theorem type_preservation t t' :
+  step t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A.
 Proof.
-  intros t t' H.
+  intros H. 
+  
   induction H using sim_comp_ind with (P0 := list_type_preservation) ;
     autounfold in * ; intros ;
     try (now inversion H ; econstructor ; eauto) ;
     try (now inversion H0 ; econstructor ; eauto).
-    
+
   - inversion b.
     + inversion H0.
       * eapply beta1_type_preservation ; eassumption.
@@ -109,9 +112,9 @@ Proof.
     + eapply h_type_preservation ; eassumption.
 Qed.
 
-Corollary type_preservation' Γ t A (_: sequent Γ t A) :
-  forall t', step t t' -> sequent Γ t' A.
+Corollary type_preservation' Γ t t' A :
+  sequent Γ t A /\ step t t' -> sequent Γ t' A.
 Proof.
-  intros.
+  intro H. destruct H as [H1 H2].
   eapply type_preservation ; eassumption.
 Qed.

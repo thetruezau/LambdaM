@@ -9,22 +9,22 @@ Import ListNotations.
 (* ------------------------------- *)
 (* predicado para termos canónicos *)
 
-Inductive is_canonical: λm -> Prop :=
+Inductive is_canonical: term -> Prop :=
 | cVar (x: var) : is_canonical (Var x)
-| cLam (t: {bind λm}) : is_canonical t -> is_canonical (Lam t)                                                      
-| cVarApp (x: var) (u: λm) (l: list λm) : is_canonical u -> is_canonical_list l -> is_canonical (mApp (Var x) u l)
-| cLamApp (t: {bind λm}) (u: λm) (l: list λm) : is_canonical t -> is_canonical u -> is_canonical_list l -> is_canonical (mApp (Lam t) u l)
+| cLam (t: {bind term}) : is_canonical t -> is_canonical (Lam t)                                                      
+| cVarApp (x: var) (u: term) (l: list term) : is_canonical u -> is_canonical_list l -> is_canonical (mApp (Var x) u l)
+| cLamApp (t: {bind term}) (u: term) (l: list term) : is_canonical t -> is_canonical u -> is_canonical_list l -> is_canonical (mApp (Lam t) u l)
 
-with is_canonical_list: list λm -> Prop :=
+with is_canonical_list: list term -> Prop :=
 | cNil : is_canonical_list []
-| cCons (u: λm) (l: list λm) : is_canonical u -> is_canonical_list l -> is_canonical_list (u::l).
+| cCons (u: term) (l: list term) : is_canonical u -> is_canonical_list l -> is_canonical_list (u::l).
 
 Hint Constructors is_canonical is_canonical_list : core.
 
 Scheme sim_is_canonical_ind := Induction for is_canonical Sort Prop
   with sim_is_canonical_list_ind := Induction for is_canonical_list Sort Prop.  
 
-Definition app (v u: λm) (l: list λm) : λm :=
+Definition app (v u: term) (l: list term) : term :=
   match v with
   | Var x => mApp v u l
   | Lam t => mApp v u l
@@ -50,8 +50,8 @@ Qed.
 
 Hint Resolve app_is_closed : core.
           
-Instance Subst_Canonical : Subst λm :=
-  (fix inst (σ: var -> λm) (s: λm) : λm :=
+Instance Subst_Canonical : Subst term :=
+  (fix inst (σ: var -> term) (s: term) : term :=
      match s with
      | Var x => σ x
      | Lam t => Lam (inst (up σ) t)
@@ -66,9 +66,9 @@ Notation "l ..{ σ }" := (mmap (Subst_Canonical σ) l)
   (at level 2, σ at level 200, left associativity,
     format "l ..{ σ }" ) : subst_scope.                             
 
-Existing Instance Subst_λm.
+Existing Instance Subst_term.
 
-Definition is_canonical_subst (σ: var -> λm) :=
+Definition is_canonical_subst (σ: var -> term) :=
   forall x, is_canonical (σ x).
 
 Hint Unfold is_canonical_subst : core.
@@ -102,13 +102,13 @@ Qed.
 (* Redução em termos canónicos *)
 (* --------------------------- *)
 
-Inductive β1' : relation λm :=
-| Can_Step_Beta1 (t: {bind λm}) (u t': λm):
+Inductive β1' : relation term :=
+| Can_Step_Beta1 (t: {bind term}) (u t': term):
   t' = t.{u .: ids} ->
   β1' (mApp (Lam t) u []) t'.
 
-Inductive β2' : relation λm :=
-| Can_Step_Beta2 (t: {bind λm}) (u u' t': λm) (l: list λm):
+Inductive β2' : relation term :=
+| Can_Step_Beta2 (t: {bind term}) (u u' t': term) (l: list term):
   t' = app t.{u .: ids} u' l ->
   β2' (mApp (Lam t) u (u'::l)) t'.
 
