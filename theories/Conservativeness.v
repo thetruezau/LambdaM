@@ -11,26 +11,28 @@ Proposition multistep_trans (A: Type) (R: relation A):
   forall x y z, clos_refl_trans_1n _ R x y -> clos_refl_trans_1n _ R y z ->
            clos_refl_trans_1n _ R x z.
 Proof.                                                  
-  intros. induction H.
-  - assumption.
-  - apply rt1n_trans with y.
-    + assumption.
-    + apply IHclos_refl_trans_1n. assumption.
+  intros.
+  induction H ; try easy.
+  - apply rt1n_trans with y ; try easy.
+    + now apply IHclos_refl_trans_1n. 
 Qed.
 
-Lemma mApp_multistep_to_app : forall t u l, LambdaM.multistep (mApp t u l) (app t u l).
+Lemma mApp_multistep_to_app :
+  forall t u l, LambdaM.multistep (mApp t u l) (app t u l).
 Proof.
   destruct t ; intros ; asimpl ; try apply rt1n_refl.
   - apply rt1n_trans with (mApp t1 t2 (l ++ u :: l0)) ; try apply rt1n_refl.
-    + constructor. right. constructor. reflexivity.
+    + constructor. right. now constructor. 
 Qed.
+
+Local Hint Resolve up_subst_is_closed : core.
 
 Lemma two_subst_multistep :
   forall t, is_canonical t -> forall σ, is_canonical_subst σ -> LambdaM.multistep t.[σ] t.{σ}.
 Proof.
   pose LambdaM.multistep_is_compatible as H. destruct H.
 
-  intros t it.
+  intros t it.  
   induction it using sim_is_canonical_ind
     with (P0 := fun l (_: is_canonical_list l) => forall σ, is_canonical_subst σ -> LambdaM.multistep' l..[σ] l..{σ}) ; intros ; asimpl ;
     try constructor ; auto.
@@ -46,13 +48,13 @@ Proof.
 Qed.
 
 Lemma conservativeness1 :
-  forall (t t': Canonical.term), Canonical.step t t' -> LambdaM.multistep (i t) (i t').
+  (forall (t t': Canonical.term), Canonical.step t t' -> LambdaM.multistep (i t) (i t'))
+  /\
+  (forall l l', Canonical.step' l l' -> LambdaM.multistep' (map i l) (map i l')).
 Proof.
   pose LambdaM.multistep_is_compatible as H. destruct H.
-  
-  intros t t' s.
-  induction s using Canonical.sim_comp_ind
-    with (P0 := fun l l' (_: Canonical.step' l l') => LambdaM.multistep' (map i l) (map i l')) ; asimpl ; auto.
+
+  apply Canonical.mut_comp_ind ; intros ; asimpl ; auto.
 
   - inversion b as [Beta1 | Beta2].
 
@@ -60,27 +62,31 @@ Proof.
     + inversion Beta1 ; subst. asimpl.
       apply rt1n_trans with ((i t0).[(i u)/]).
       * unfold LambdaM.step. constructor. left. left.
-        constructor. reflexivity.
-      * rewrite i_subst_pres. rewrite<- i_simple_subst.
+        now constructor. 
+      * rewrite (proj1 i_subst_pres). rewrite<- i_simple_subst.
         apply two_subst_multistep.
         ** apply i_image_is_canonical.
         ** autounfold.
-           destruct x ; asimpl ; [apply i_image_is_canonical | constructor].
+           destruct x ; asimpl ; try easy.
+           *** apply i_image_is_canonical.
 
     (* reproduzir Beta2 em λm *)
     + inversion Beta2 ; subst. asimpl.
       apply rt1n_trans with (mApp ((i t0).[(i u)/]) (i v) (map i l)).
       * unfold LambdaM.step. constructor. left. right.
-        constructor. reflexivity.
+        now constructor. 
       * apply multistep_trans with (mApp (i t0.[u/]) (i v) (map i l)).
-        ** apply comp_mApp1. rewrite i_subst_pres. rewrite<- i_simple_subst.
+        ** apply comp_mApp1.
+           rewrite (proj1 i_subst_pres).
+           rewrite<- i_simple_subst.
            apply two_subst_multistep.
            *** apply i_image_is_canonical.
            *** autounfold.
-               destruct x ; asimpl ; [apply i_image_is_canonical | constructor].
+               destruct x ; asimpl ; try easy.
+               **** apply i_image_is_canonical.
         ** destruct (t0.[u/]) ; asimpl in * ; subst ; try apply rt1n_refl.
-           *** apply rt1n_trans with (mApp (Var x) (i t) (map i (l0 ++ v :: l))).
-               **** constructor. right. constructor. apply map_app.
+           *** apply rt1n_trans with (mApp (Var x) (i t) (map i (l0 ++ v :: l))) ; try easy.
+               **** constructor. right. constructor. now apply map_app.
                **** constructor.
            *** apply rt1n_trans with (mApp (Lam (i t)) (i t1) (map i (l0 ++ v :: l))).
                **** constructor. right. constructor. apply map_app.
@@ -88,28 +94,26 @@ Proof.
 Qed.
 
 Lemma h_subst_eq :
-  forall (t: LambdaM.term) σ, h t.[σ] = (h t).[σ >>> h].
+  (forall (t: LambdaM.term) σ, h t.[σ] = (h t).[σ >>> h])
+  /\
+  (forall (l: list LambdaM.term) σ, map h l..[σ] = (map h l)..[σ >>> h]).
 Proof.
-  induction t using LambdaM.sim_term_ind ; intros ; asimpl.
-  - reflexivity.
-  - f_equal. rewrite IHt. f_equal. 
-    f_ext. induction x ; asimpl ; trivial. apply h_ren_pres.
-  - assert (IHl : map h l..[σ] = (map h l)..[σ >>> h]).
-    { induction H ; asimpl ; f_equal ; auto. }
-    rewrite IHt1, IHt2, IHl. rewrite app_subst_pres. reflexivity.    
+  apply LambdaM.mut_term_ind ; intros ; asimpl ; f_equal ; try easy.
+  - now rewrite<- h_up_subst.
+  - rewrite H, H0, H1. now rewrite app_subst_pres.
 Qed.
 
 Lemma conservativeness2 :
-  forall (t t': LambdaM.term), LambdaM.step t t' -> Canonical.multistep (h t) (h t'). 
+  (forall (t t': LambdaM.term), LambdaM.step t t' -> Canonical.multistep (h t) (h t'))
+  /\
+  (forall (l l': list LambdaM.term), LambdaM.step' l l' -> Canonical.multistep' (map h l) (map h l')).
 Proof.
   pose Canonical.multistep_is_compatible as H. destruct H.
-  
-  intros t t' s.
-  induction s using LambdaM.sim_comp_ind
-    with (P0 := fun l l' (_: LambdaM.step' l l') => Canonical.multistep' (map h l) (map h l')) ; asimpl ; auto.
-  - apply multistep_comp_app1. assumption.
-  - apply multistep_comp_app2. assumption.
-  - apply multistep_comp_app3. assumption.
+
+  apply LambdaM.mut_comp_ind ; intros ; asimpl ; auto.
+  - now apply multistep_comp_app1. 
+  - now apply multistep_comp_app2. 
+  - now apply multistep_comp_app3. 
     
   - inversion b as [Beta | H].
 
@@ -117,13 +121,15 @@ Proof.
     + inversion Beta as [Beta1 | Beta2].
       * inversion Beta1 ; subst ; asimpl.
         apply rt1n_trans with ((h t0).[h u/]).
-        ** constructor. left. constructor. reflexivity.
-        ** rewrite h_subst_eq. rewrite h_simple_subst. constructor.
+        ** constructor. left. now constructor. 
+        ** rewrite (proj1 h_subst_eq).
+           rewrite h_simple_subst. constructor.
       * inversion Beta2 ; subst ; asimpl.
         apply rt1n_trans with ((h t0).[h u/]@(h v, map h l)).
-        ** constructor. right. constructor. reflexivity.
+        ** constructor. right. now constructor. 
         ** apply multistep_comp_app1.
-           rewrite h_subst_eq. rewrite h_simple_subst. constructor.
+           rewrite (proj1 h_subst_eq).
+           rewrite h_simple_subst. constructor.
 
     (* h colapsa passos H *)
     + inversion H ; subst ; asimpl.
@@ -143,15 +149,13 @@ Proof.
   - intro H.
     induction H as [| t1 t2 t3].
     + constructor.
-    + apply multistep_trans with (i t2).
-      * apply conservativeness1. assumption.
-      * assumption.
+    + apply multistep_trans with (i t2) ; try easy.
+      * now apply conservativeness1. 
   - intro H.
-    rewrite<- inversion2 with t.
-    rewrite<- inversion2 with t'.
+    rewrite<- (proj1 inversion2) with t.
+    rewrite<- (proj1 inversion2) with t'.
     induction H as [| t1 t2 t3].
     + constructor.
-    + apply multistep_trans with (h t2).
-      * apply conservativeness2. assumption.
-      * assumption.
+    + apply multistep_trans with (h t2) ; try easy.
+      * now apply conservativeness2. 
 Qed.

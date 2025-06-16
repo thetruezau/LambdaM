@@ -6,329 +6,290 @@ Require Import Lambda Canonical CanonicalIsomorphism.
 
 Import ListNotations.
 
-(*   F:   λc --> λ    *)
+(*   θ:   λc --> λ    *)
 (* ------------------ *)
 
-Fixpoint F (t: Canonical.term) : Lambda.term :=
+Fixpoint θ (t: Canonical.term) : Lambda.term :=
   match t with
   | Vari x => Var x
-  | Lamb t => Lam (F t)
-  | VariApp x u l => fold_left (fun s0 t0 => App s0 (F t0)) (u::l) (Var x)
-  | LambApp t u l => fold_left (fun s0 t0 => App s0 (F t0)) (u::l) (Lam (F t))
+  | Lamb t => Lam (θ t)
+  | VariApp x u l => fold_left (fun s0 t0 => App s0 (θ t0)) (u::l) (Var x)
+  | LambApp t u l => fold_left (fun s0 t0 => App s0 (θ t0)) (u::l) (Lam (θ t))
   end.
 
-Definition f (s: Lambda.term) (l: list Canonical.term) : Lambda.term := fold_left (fun s0 t0 => App s0 (F t0)) l s.
-Hint Unfold f : core.
+Definition θ' (s: Lambda.term) (l: list Canonical.term) : Lambda.term := fold_left (fun s0 t0 => App s0 (θ t0)) l s.
+Hint Unfold θ' : core.
 
-(*   G:   λ --> λc    *)
+(*   ψ:   λ --> λc    *)
 (* ------------------ *)
 
-Fixpoint g (s: Lambda.term) (l: list Canonical.term) : Canonical.term :=
+Fixpoint ψ' (s: Lambda.term) (l: list Canonical.term) : Canonical.term :=
   match s with
   | Var x => match l with
             | [] => Vari x
             | (u::l) => VariApp x u l
             end
   | Lam t => match l with
-            | [] => Lamb (g t [])
-            | (u::l) => LambApp (g t []) u l
+            | [] => Lamb (ψ' t [])
+            | (u::l) => LambApp (ψ' t []) u l
             end
-  | App s t => g s ((g t [])::l)
+  | App s t => ψ' s ((ψ' t [])::l)
   end.
 
-Definition G (s: Lambda.term) : Canonical.term := g s [].
-Hint Unfold G : core.
-       
-(* Lemas complementares sobre g e h *)
-(* -------------------------------- *)
+Definition ψ (s: Lambda.term) : Canonical.term := ψ' s [].
+Hint Unfold ψ : core.
 
-Lemma forall_implies_aux_inversion1 :
-  forall l, Forall (fun u => G (F u) = u) l ->
-       forall l' s, g (f s l) l' = g s (l++l').
+(* θ e ψ são bijecções ao nível da sintaxe *)
+(* --------------------------------------- *)
+
+Theorem inversion1 :
+  (forall (t: Canonical.term), ψ (θ t) = t)
+  /\
+  (forall (l: list Canonical.term) s, ψ (θ' s l) = ψ' s l).
 Proof.
-  intros l H. induction H as [| u l]; intros.
-  - asimpl. f_equal.
-  - asimpl in *. fold (f (App s (F u)) l). rewrite IHForall. 
-    asimpl. f_equal. f_equal. assumption.
+  apply Canonical.mut_term_ind ; intros ; asimpl ; try easy.
+  - now f_equal. 
+  - fold (θ' (App (Var x) (θ u)) l).
+    fold (ψ (θ' (App (Var x) (θ u)) l)).
+    rewrite H0. asimpl. now f_equal.
+  - fold (θ' (App (Lam (θ t)) (θ u)) l).
+    fold (ψ (θ' (App (Lam (θ t)) (θ u)) l)).
+    rewrite H1. asimpl. now f_equal.
+  - fold (θ' (App s (θ u)) l).
+    fold (ψ (θ' (App s (θ u)) l)).
+    rewrite H0. asimpl. now repeat f_equal.
 Qed.
 
 Lemma aux_inversion2 :
-  forall s l, F (g s l) = f s l.
+  forall s l, θ (ψ' s l) = θ' s l.
 Proof.
   induction s ; intros.
-  - destruct l ; asimpl ; reflexivity.
+  - destruct l ; now asimpl.
   - destruct l ; asimpl ; repeat f_equal ; auto.
-  - asimpl. rewrite IHs1. asimpl. rewrite IHs2. reflexivity.
+  - asimpl. rewrite IHs1. asimpl. now rewrite IHs2. 
 Qed.
 
-(* G e H são bijecções ao nível da sintaxe *)
-(* --------------------------------------- *)
-
-Theorem inversion1 : forall t, G (F t) = t.
+Theorem inversion2 : forall s, θ (ψ s) = s.
 Proof.
-  induction t using Canonical.sim_term_ind.
-  (* dedicated induction principle *)
-  - reflexivity.
-  - asimpl. f_equal. assumption.
-  - asimpl. fold (f (App (Var x) (F t)) l).
-    rewrite forall_implies_aux_inversion1 ; [| assumption].
-    asimpl. f_equal ; [assumption | apply app_nil_r].
-  - asimpl. fold (f (App (Lam (F t1)) (F t2)) l).
-    rewrite forall_implies_aux_inversion1 ; [| assumption].
-    asimpl. f_equal ; [| |apply app_nil_r] ; assumption.
+  induction s ; asimpl ; try easy.
+  - autounfold in IHs. now f_equal.
+  - rewrite aux_inversion2. asimpl. now f_equal.
 Qed.
 
-Theorem inversion2 : forall s, F (G s) = s.
+(* Lemas para preservaçao de renamings *)
+(* ----------------------------------- *)
+
+Lemma θ_app_lemma :
+  (forall v u l, θ v@(u,l) = θ' (App (θ v) (θ u)) l)
+  /\
+  (forall l s u' l', θ' s (l++(u'::l')) = θ' (App (θ' s l) (θ u')) l').
 Proof.
-  induction s ; asimpl.
-  - reflexivity.
-  - autounfold in IHs. f_equal. assumption.
-  - rewrite aux_inversion2. asimpl. f_equal. apply IHs2.
+  apply Canonical.mut_term_ind ; intros ; asimpl ; try easy.
+  - fold (θ' (App (Var x) (θ u)) (l ++ u0 :: l0)).
+    fold (θ' (App (Var x) (θ u)) l).
+    now rewrite H0.
+  - fold (θ' (App (Lam (θ t)) (θ u)) (l ++ u0 :: l0)).
+    fold (θ' (App (Lam (θ t)) (θ u)) l).
+    now rewrite H1.
+  - fold (θ' (App s (θ u)) (l ++ u' :: l')).
+    fold (θ' (App s (θ u)) l).
+    now rewrite H0.
 Qed.
 
-(* Alguns lemas para os resultados sobre substituição *)
-(* -------------------------------------------------- *)
+Lemma head_as_append (A: Type) (x:A) (xs: list A) :
+  [x]++xs = x::xs.
+Proof. easy. Qed.
 
-Lemma g_is_multiapp : (*talvez pudesse provar de maneira diferente!*)
-  forall s u l, g s (u::l) = (G s)@(u, l).
+Corollary ψ_app_lemma : forall s u l, ψ' s (u :: l) = (ψ s)@(u, l).
 Proof.
-  intros. rewrite<- inversion2 at 1.
-  destruct (G s) as [x | t | x u' l' | t u' l'] ; intros ; asimpl.
-  - reflexivity.
-  - fold (G (F t)). rewrite inversion1. reflexivity.
-  - fold (f (App (Var x) (F u')) l').
-    rewrite forall_implies_aux_inversion1.
-    + asimpl. f_equal. apply inversion1.
-    + induction l' ; constructor ; auto. apply inversion1.
-  - fold (f (App (Lam (F t)) (F u')) l').
-    rewrite forall_implies_aux_inversion1.
-    + asimpl. f_equal ; apply inversion1.
-    + induction l' ; constructor ; auto. apply inversion1.
-Qed.
-
-Lemma f_app_lemma : forall l l' s, f s (l ++ l') = f (f s l) l'.
-Proof.
-  intros l l'. induction l ; intros ; auto ; try apply IHl.
+  intros s u l.
+  destruct s ; asimpl ; try easy.
+  - rewrite<- (proj2 inversion1).
+    rewrite<- head_as_append.
+    rewrite (proj2 θ_app_lemma). 
+    rewrite<- aux_inversion2 with (s:=s1).
+    rewrite<- (proj1 θ_app_lemma). 
+    now rewrite (proj1 inversion1).
 Qed.    
   
-Lemma f_is_multiapp :
-  forall t u l, F t@(u, l) = f (App (F t) (F u)) l.
+Lemma θ_ren_pres :
+  (forall t ξ, θ t.[ren ξ] = (θ t).[ren ξ])
+  /\
+  (forall l s ξ, θ' s.[ren ξ] l..[ren ξ] = (θ' s l).[ren ξ]).
 Proof.
-  destruct t as [x | t | x u' l' | t u' l'] ; intros ; asimpl ; auto.
-  - fold (f (App (Var x) (F u')) (l' ++ u::l)).
-    fold (f (App (Var x) (F u')) l').
-    apply f_app_lemma. 
-  - fold (f (App (Lam (F t)) (F u')) (l' ++ u::l)).
-    fold (f (App (Lam (F t)) (F u')) l').
-    apply f_app_lemma. 
-Qed.
-    
-Lemma g_ren_pres :
-  forall s l ξ, g s.[ren ξ] l..[ren ξ] = (g s l).[ren ξ].
-Proof.
-  induction s as [x | s | s1 IHs1 s2 IHs2]; intros.
-  - destruct l as [| u l] ; asimpl.
-    + reflexivity.
-    + apply g_is_multiapp.
-  - destruct l as [| u l] ; asimpl ; f_equal.
-    + specialize IHs with [] (upren ξ). asimpl in IHs. assumption.
-    + specialize IHs with [] (upren ξ). asimpl in IHs. assumption.
-  - asimpl. rewrite<- IHs1. asimpl. rewrite<- IHs2. asimpl. reflexivity.
+  apply Canonical.mut_term_ind ; intros ; asimpl ; try easy.
+  - now f_equal.
+  - fold (θ' (App (Var x) (θ u)) l).
+    rewrite<- H0.
+    rewrite (proj1 θ_app_lemma).
+    now rewrite H.
+  - fold (θ' (App (Lam (θ t.[ren (upren ξ)])) (θ u.[ren ξ])) l..[ren ξ]).
+    fold (θ' (App (Lam (θ t)) (θ u)) l).
+    rewrite H, H0.
+    rewrite<- H1.
+    now asimpl.
+  - fold (θ' (App s.[ren ξ] (θ u.[ren ξ])) l..[ren ξ]).
+    fold (θ' (App s (θ u)) l).
+    rewrite H.
+    rewrite<- H0.
+    now asimpl.
 Qed.
 
-Lemma forall_implies_f_subst_pres :
-  forall l σ, Forall (fun u => F u.[σ] = (F u).[σ >>> F]) l ->
-        forall s, f s.[σ >>> F] l..[σ] = (f s l).[σ >>> F].
-Proof.
-  intros l σ H. induction H as [| u l]; intros ; asimpl.
-  - reflexivity.
-  - fold (f (App s.[σ >>> F] (F u.[σ])) l..[σ]).
-    fold (f (App s (F u)) l). rewrite<- IHForall. asimpl.
-    repeat f_equal. apply H.
-Qed.
-
-Lemma F_ren_comp :
-  forall ξ, ren ξ = ren ξ >>> F.
-Proof. reflexivity. Qed.
-  
-(* isomorfismos preservam renamings *)
-
-Lemma G_ren_pres :
-  forall s ξ, G s.[ren ξ] = (G s).[ren ξ].
-Proof.
-  induction s ; intros ; asimpl.
-  - reflexivity.
-  - f_equal. apply IHs.
-  - fold (G s2.[ren ξ]). fold (G s2). rewrite IHs2.
-    specialize g_ren_pres with s1 [G s2] ξ. auto.
-Qed.
-
-Lemma F_ren_pres :
-  forall s ξ, F s.[ren ξ] = (F s).[ren ξ].
-Proof.
-  induction s using Canonical.sim_term_ind ; intros ; asimpl.
-  - reflexivity.
-  - f_equal. apply IHs.
-  - fold (f (App (Var x) (F s)) l). simpl.
-    fold (f (App (Var (ξ x)) (F s.[ren ξ])) l..[ren ξ]).
-
-    assert (app_rw : App (Var (ξ x)) (F s.[ren ξ]) = (App (Var x) (F s)).[ren ξ]).
-    { asimpl. f_equal. apply IHs. }
-
-    rewrite app_rw. rewrite F_ren_comp at 1 2.
-    + apply forall_implies_f_subst_pres.
-      induction H as [| u l] ; auto.
-      
-  - fold (f (App (Lam (F s1.[ren (upren ξ)])) (F s2.[ren ξ])) l..[ren ξ]).
-    fold (f (App (Lam (F s1)) (F s2)) l).
-
-    assert (app_rw : App (Lam (F s1.[ren (upren ξ)])) (F s2.[ren ξ]) = (App (Lam (F s1)) (F s2)).[ren ξ]).
-    { asimpl. repeat f_equal ; [apply IHs1 | apply IHs2]. }
-
-    rewrite app_rw. rewrite F_ren_comp at 1 2.
-    + apply forall_implies_f_subst_pres.
-      induction H as [| u l] ; auto.    
-Qed.
-
-Lemma up_sigma_G σ : up (σ >>> G) = up σ >>> G.
-Proof.
-  f_ext. destruct x ; asimpl.
-  - reflexivity.
-  - fold (G (σ x).[ren (+1)]). symmetry. apply G_ren_pres.
-Qed.
-
-Lemma up_sigma_F σ : up (σ >>> F) = up σ >>> F.
-Proof.
-  f_ext. destruct x ; asimpl.
-  - reflexivity.
-  - symmetry. apply F_ren_pres.
-Qed.
-
-Lemma g_subst_pres :
-  forall s l σ, g s.[σ] l..[σ >>> G] = (g s l).[σ >>> G].
+Lemma ψ_ren_pres :
+  (forall s l ξ, ψ' s.[ren ξ] l..[ren ξ] = (ψ' s l).[ren ξ]).
 Proof.
   induction s ; intros.
-  - destruct l as [| u l] ; asimpl.
-    + reflexivity.
-    + apply g_is_multiapp.
-  - destruct l as [| u l] ; asimpl.
-    + f_equal. rewrite up_sigma_G.
-      set (up σ) as σ'. specialize IHs with [] σ'.
-      asimpl in IHs. assumption.
-    + f_equal. rewrite up_sigma_G.
-      set (up σ) as σ'. specialize IHs with [] σ'.
-      asimpl in IHs. assumption.
-  - asimpl. rewrite<- IHs1. asimpl. rewrite<- IHs2. asimpl. reflexivity.
+  - destruct l as [| u l] ; asimpl ; try easy.
+  - destruct l as [| u l] ; asimpl ; try easy.
+    + now rewrite<- IHs.
+    + now rewrite<- IHs.   
+  - asimpl. rewrite<- IHs1. asimpl. now rewrite<- IHs2.
+Qed.
+    
+(* Lemas para preservaçao de substituição *)
+(* -------------------------------------- *)
+
+Lemma up_subst_θ σ : up (σ >>> θ) = up σ >>> θ.
+Proof.
+  f_ext. destruct x ; asimpl ; try easy.
+  - now rewrite (proj1 θ_ren_pres).
 Qed.
 
-(* As bijecções preservam a substituição *)
-(* ------------------------------------- *)
-
-Theorem G_subst_pres :
-  forall s σ, G s.[σ] = (G s).[σ >>> G].
+Lemma θ_subst_pres :
+  (forall t σ, θ t.[σ] = (θ t).[σ >>> θ])
+  /\
+  (forall l s σ, θ' s.[σ >>> θ] l..[σ] = (θ' s l).[σ >>> θ]).
 Proof.
-  induction s ; intros ; asimpl.
-  - reflexivity.
-  - f_equal. rewrite up_sigma_G. apply IHs.
-  - specialize g_subst_pres with s1 [G s2] σ. asimpl.
-    fold (G s2). fold (G s2.[σ]). rewrite IHs2. auto. 
+  apply Canonical.mut_term_ind ; intros ; asimpl ; try easy.
+  - f_equal. now rewrite up_subst_θ.
+  - fold (θ' (App (Var x) (θ u)) l).
+    rewrite<- H0.
+    rewrite (proj1 θ_app_lemma).
+    now rewrite H.
+  - fold (θ' (App (Lam (θ t.[up σ])) (θ u.[σ])) l..[σ]).
+    fold (θ' (App (Lam (θ t)) (θ u)) l).
+    rewrite H, H0.
+    rewrite<- up_subst_θ.
+    rewrite<- H1.
+    now asimpl.
+  - fold (θ' (App s.[σ >>> θ] (θ u.[σ])) l..[σ]).
+    fold (θ' (App s (θ u)) l).
+    rewrite H.
+    rewrite<- H0.
+    now asimpl.
 Qed.
 
-Theorem F_subst_pres :
-  forall s σ, F s.[σ] = (F s).[σ >>> F].
+Lemma up_subst_ψ σ : up (σ >>> ψ) = up σ >>> ψ.
 Proof.
-  induction s using Canonical.sim_term_ind ; intros ; asimpl.
-  - reflexivity.
-  - f_equal. rewrite up_sigma_F. apply IHs.
-  - fold (f (App (Var x) (F s)) l).
-    rewrite<- forall_implies_f_subst_pres.
-    + asimpl. rewrite<- IHs. apply f_is_multiapp.
-    + induction H ; auto.
-      
-  - fold (f (App (Lam (F s1.[up σ])) (F s2.[σ])) l..[σ]).
-    fold (f (App (Lam (F s1)) (F s2)) l).
+  f_ext. destruct x ; asimpl ; try easy.
+  - now rewrite ψ_ren_pres with (l:=[]).
+Qed.
 
-    assert (rw_subst : (App (Lam (F s1)) (F s2)).[σ >>> F]
-                       = App (Lam (F s1.[up σ])) (F s2.[σ])).
-    { asimpl. f_equal.
-      - f_equal. rewrite IHs1. f_equal. apply up_sigma_F.
-      - rewrite IHs2. reflexivity. }
-
-    rewrite<- rw_subst. apply forall_implies_f_subst_pres.
-    + induction H ; auto.
+Lemma ψ_subst_pres :
+  (forall s l σ, ψ' s.[σ] l..[σ >>> ψ] = (ψ' s l).[σ >>> ψ]).
+Proof.
+  induction s ; intros.
+  - destruct l as [| u l] ; asimpl ; try easy.
+    + now rewrite ψ_app_lemma.      
+  - destruct l as [| u l] ; asimpl ; try easy.
+    + rewrite up_subst_ψ.
+      now rewrite<- IHs.
+    + rewrite up_subst_ψ.      
+      now rewrite<- IHs.   
+  - asimpl. rewrite<- IHs1. asimpl. now rewrite<- IHs2.
 Qed.
 
 (* As bijecções preservam a relação de um passo *)
 (* -------------------------------------------- *)
-  
-Lemma g_step_pres :
+
+Lemma θ'_step_pres : forall (l: list Canonical.term),
+  forall s s', Lambda.step s s' -> Lambda.step (θ' s l) (θ' s' l).
+Proof.
+  induction l as [| u l]; intros ; asimpl ; try easy.
+  - fold (θ' (App s (θ u)) l).
+    fold (θ' (App s' (θ u)) l).
+    apply IHl. now constructor.
+Qed.
+    
+Theorem θ_step_pres :
+  (forall (t t': Canonical.term), Canonical.step t t' -> Lambda.step (θ t) (θ t'))
+  /\
+  (forall (l l': list Canonical.term), Canonical.step' l l' -> forall s, Lambda.step (θ' s l) (θ' s l')).
+Proof.  
+  apply Canonical.mut_comp_ind ; intros ; asimpl ; eauto.  
+  - now constructor. 
+  - apply θ'_step_pres. now constructor.
+  - apply θ'_step_pres. apply Step_App1. now constructor.
+  - apply θ'_step_pres. now apply Step_App2.
+
+  - inversion b as [Beta1 | Beta2].
+    + inversion Beta1 ; subst ; asimpl.
+      constructor. rewrite (proj1 θ_subst_pres). now asimpl.
+    + inversion Beta2 ; subst. asimpl.
+      rewrite (proj1 θ_app_lemma). 
+      apply θ'_step_pres. constructor. constructor.
+      rewrite (proj1 θ_subst_pres). now asimpl.
+  - apply θ'_step_pres. now constructor. 
+Qed.
+
+Lemma ψ_subst_rw s1 s2 :
+  ψ' s1.[s2/] [] = (ψ' s1 []).[ψ' s2 []/].
+Proof.
+  rewrite ψ_subst_pres with (l:=[]).
+  fold (ψ s1.[s2/]). fold (ψ s1). fold (ψ s2).
+  autosubst.
+Qed.
+
+Lemma ψ'_step_pres :
   forall s s', Lambda.step s s' ->
-          forall l, Canonical.step (g s l) (g s' l).
+          forall l, Canonical.step (ψ' s l) (ψ' s' l).
 Proof.
   intros s s' H0. induction H0 ; intros ; subst.
-  - asimpl.
-    assert (g_subst : g s.[t/] [] = (g s []).[g t []/]).
-    { fold (G s.[t/]). fold (G s). fold (G t). rewrite G_subst_pres.
-      f_equal. f_ext. destruct x ; auto. }
-    
+  - asimpl.    
     destruct l as [| u l].
-    + constructor. left. constructor. exact g_subst.
+    + constructor. left. constructor.
+      now rewrite ψ_subst_rw.
     + constructor. right. constructor.
-      rewrite<- g_subst. fold (G s.[t/]). apply g_is_multiapp.
+      rewrite<- ψ_subst_rw. fold (ψ s.[t/]).
+      now rewrite ψ_app_lemma.
   - destruct l as [| u l] ; asimpl.
     + constructor. apply IHstep.
     + constructor. apply IHstep.
   - asimpl. apply IHstep.
-  - asimpl. repeat rewrite g_is_multiapp. apply step_comp_app2. apply IHstep.
+  - asimpl. repeat rewrite ψ_app_lemma.
+    apply step_comp_app2. now apply IHstep.
 Qed.
     
-Corollary G_step_pres :
-  forall s s', Lambda.step s s' -> Canonical.step (G s) (G s').
-Proof. intros s s' H0. apply g_step_pres. assumption. Qed.
-  
-Lemma f_step_pres :
-  forall l s s', Lambda.step s s' -> Lambda.step (f s l) (f s' l).
-Proof.
-  induction l ; asimpl ; intros.
-  - trivial.
-  - fold (f (App s (F a)) l). fold (f (App s' (F a)) l).
-    apply IHl. constructor. assumption.
-Qed.
-
-Theorem F_step_pres :
-  forall (t t': Canonical.term), Canonical.step t t' -> Lambda.step (F t) (F t').
-Proof.
-  assert (F_subst : forall s t, F s.[t/] = (F s).[F t/]).
-  { intros s t. rewrite F_subst_pres.
-    f_equal. f_ext. destruct x ; auto. }
-  
-  intros t t' H0. induction H0 using sim_comp_ind
-    with (P0 := fun l l' (_: Canonical.step' l l') =>
-                  forall t, Lambda.step (f t l) (f t l')) ;
-    intros ; asimpl.
-  - constructor. assumption.
-  - apply f_step_pres. constructor. assumption.
-  - apply IHcomp.
-  - apply f_step_pres. apply Step_App1. constructor. assumption.
-  - apply f_step_pres. apply Step_App2. assumption.
-  - apply IHcomp.
-  - inversion b as [Beta1 | Beta2].
-    + inversion Beta1 ; subst ; asimpl.
-      constructor. apply F_subst.      
-    + inversion Beta2 ; subst. rewrite f_is_multiapp. asimpl.
-      apply f_step_pres. constructor. constructor. apply F_subst.
-  - apply f_step_pres. constructor. assumption.
-  - apply IHcomp.
-Qed.
+Corollary ψ_step_pres :
+  forall s s', Lambda.step s s' -> Canonical.step (ψ s) (ψ s').
+Proof. intros s s' H. now apply ψ'_step_pres. Qed.  
 
 (* isomorphism at the level of types *)
 (* --------------------------------- *)
 
 Require Import SimpleTypes.
 
-Lemma g_admissable_rule Γ s A :
+Theorem θ_admissable_rule :
+  forall Γ,
+  (forall t A, Canonical.sequent Γ t A -> Lambda.sequent Γ (θ t) A)
+  /\
+  (forall A l B, list_sequent Γ A l B -> forall s, Lambda.sequent Γ s A -> Lambda.sequent Γ (θ' s l) B).
+Proof.
+  apply Canonical.mut_sequent_ind ; intros ; asimpl ;
+    try easy ; try now constructor.
+  - fold (θ' (App (Var x) (θ u)) l). apply H0.
+    apply Elim with A ; try easy.
+    + now constructor.
+  - fold (θ' (App (Lam (θ t)) (θ u)) l). apply H1.
+    apply Elim with A ; try easy.
+    + now constructor.
+  - fold (θ' (App s0 (θ u)) l). apply H0.
+    apply Elim with A ; try easy.
+Qed.        
+    
+Lemma ψ'_admissable_rule Γ s A :
   Lambda.sequent Γ s A ->
-    forall l B, list_sequent Γ A l B -> Canonical.sequent Γ (g s l) B.
+    forall l B, list_sequent Γ A l B -> Canonical.sequent Γ (ψ' s l) B.
 Proof.
   intro H. induction H ; intros.
   - inversion H0 ; subst ; asimpl ; eauto.
@@ -336,9 +297,9 @@ Proof.
   - asimpl. eauto.
 Qed.  
   
-Theorem G_admissable_rule Γ s A :
-  Lambda.sequent Γ s A -> Canonical.sequent Γ (G s) A.
+Theorem ψ_admissable_rule Γ s A :
+  Lambda.sequent Γ s A -> Canonical.sequent Γ (ψ s) A.
 Proof.
   intro H. induction H ; asimpl ; auto.
-  - eapply g_admissable_rule ; eauto.
+  - eapply ψ'_admissable_rule ; eauto.
 Qed.

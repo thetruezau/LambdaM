@@ -15,26 +15,43 @@ Inductive term: Type :=
 
 Section dedicated_induction_principle.
   Variable P : term -> Prop.
-
+  Variable Q : list term -> Prop.
+  
   Hypothesis HVar : forall x, P (Var x).
-  Hypothesis HLam : forall t, P t -> P (Lam t).
-  Hypothesis HmApp : forall t u l, P t -> P u -> Forall P l ->
-                                   P (mApp t u l).
-
+  Hypothesis HLam : forall t: {bind term}, P t -> P (Lam t).
+  Hypothesis HmApp : forall t u l, P t -> P u -> Q l -> P (mApp t u l).
+  Hypothesis HNil : Q [].
+  Hypothesis HCons : forall u l, P u -> Q l -> Q (u::l).
+  
   Proposition sim_term_ind : forall t, P t.
   Proof.
     fix rec 1. destruct t.
-    - apply HVar.
-    - apply HLam. apply rec.
+    - now apply HVar.
+    - apply HLam. now apply rec.
     - apply HmApp.
-      + apply rec.
-      + apply rec.
-      + assert (forall l, Forall P l). fix rec' 1. destruct l0.
-        * apply Forall_nil.
-        * apply Forall_cons ; [ apply rec | apply rec' ].
-        * apply H.
-  Qed.
+      + now apply rec.
+      + now apply rec.
+      + assert (forall l, Q l). {
+            fix rec' 1. destruct l0.
+            - apply HNil.
+            - apply HCons.
+              + now apply rec.
+              + now apply rec'. }
+          
+        now apply H.
+  Qed.      
+  
+  Proposition sim_list_ind : forall l, Q l.
+  Proof.
+    fix rec 1. destruct l.
+    - now apply HNil.
+    - apply HCons.
+      + now apply sim_term_ind.
+      + now apply rec.
+  Qed.          
 End dedicated_induction_principle.
+
+Combined Scheme mut_term_ind from sim_term_ind, sim_list_ind.
 
 (* Substituição *)
 (* ------------ *)
@@ -69,6 +86,9 @@ Section Compatibilty.
   Scheme sim_comp_ind := Induction for comp Sort Prop
     with sim_comp_ind' := Induction for comp' Sort Prop.
 
+  Combined Scheme mut_comp_ind from sim_comp_ind, sim_comp_ind'.
+  
+  Hint Constructors comp comp' : core.
 End Compatibilty.
 
 Section IsCompatible.
@@ -132,33 +152,6 @@ Proof.
   apply clos_refl_trans_pres_comp. apply step_is_compatible.
 Qed.  
 
-Section StepSubstitution.
-
-  Lemma mmap_append (l1 l2: list term) (f: term -> term) :
-    mmap f (l1 ++ l2) = (mmap f l1) ++ (mmap f l2).
-  Proof.
-    induction l1 ; asimpl ; try rewrite IHl1 ; auto.
-  Qed.
-
-  Local Hint Resolve mmap_append : core.
-
-  Lemma step_subst :
-    forall s t, step s t -> forall σ, step s.[σ] t.[σ].
-  Proof.
-    intros s t H.
-    induction H using sim_comp_ind
-      with (P0 := fun l l' (_: step' l l') => forall σ, step' l..[σ] l'..[σ]) ;
-      intros ; autounfold ; asimpl ; constructor ; try apply IHcomp.
-    
-    - destruct b as [Beta | H].
-      + destruct Beta as [Beta1 | Beta2 ].
-        * induction Beta1. subst. left. left. constructor. autosubst.
-        * induction Beta2. subst. left. right. constructor. autosubst.
-      + induction H. subst. right. constructor. auto.
-  Qed.
-
-End StepSubstitution.
-
 (* Typing Rules *)
 (* ------------ *)
 
@@ -186,3 +179,5 @@ Hint Constructors sequent list_sequent : core.
 
 Scheme sim_sequent_ind := Induction for sequent Sort Prop
   with sim_list_sequent_ind := Induction for list_sequent Sort Prop.
+
+Combined Scheme mut_sequent_ind from sim_sequent_ind, sim_list_sequent_ind.

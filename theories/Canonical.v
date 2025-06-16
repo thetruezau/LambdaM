@@ -16,34 +16,55 @@ Inductive term: Type :=
 
 Section dedicated_induction_principle.
   Variable P : term -> Prop.
+  Variable Q : list term -> Prop.
 
   Hypothesis HVari : forall x, P (Vari x).
   Hypothesis HLamb : forall t, P t -> P (Lamb t).
-  Hypothesis HVariApp : forall x u l, P u -> Forall P l ->
-                              P (VariApp x u l).
-  Hypothesis HLambApp : forall t u l, P t -> P u -> Forall P l ->
-                                 P (LambApp t u l).
+  Hypothesis HVariApp : forall x u l, P u -> Q l -> P (VariApp x u l).
+  Hypothesis HLambApp : forall t u l, P t -> P u -> Q l -> P (LambApp t u l).
+  Hypothesis HNil : Q [].
+  Hypothesis HCons : forall u l, P u -> Q l -> Q (u::l).
 
   Proposition sim_term_ind : forall t, P t.
   Proof.
     fix rec 1. destruct t.
-    - apply HVari.
-    - apply HLamb. apply rec.
+    - now apply HVari.
+    - apply HLamb. now apply rec.
     - apply HVariApp.
-      + apply rec.
-      + assert (forall l, Forall P l). fix rec' 1. destruct l0.
-        * apply Forall_nil.
-        * apply Forall_cons ; [ apply rec | apply rec' ].
-        * apply H.
+      + now apply rec.
+      + assert (forall l, Q l). {
+            fix rec' 1. destruct l0.
+            - apply HNil.
+            - apply HCons.
+              + now apply rec.
+              + now apply rec'. }          
+        now apply H.
     - apply HLambApp.
-      + apply rec.
-      + apply rec.
-      + assert (forall l, Forall P l). fix rec' 1. destruct l0.
-        * apply Forall_nil.
-        * apply Forall_cons ; [ apply rec | apply rec' ].
-        * apply H.
-  Qed.
+      + now apply rec.
+      + now apply rec.
+      + assert (forall l, Q l). {
+            fix rec' 1. destruct l0.
+            - apply HNil.
+            - apply HCons.
+              + now apply rec.
+              + now apply rec'. }          
+        now apply H.
+  Qed.      
+
+  Proposition sim_list_ind : (forall l, Q l).
+  Proof.
+    fix rec 1. destruct l.
+    - now apply HNil.
+    - apply HCons.
+      + now apply sim_term_ind.
+      + now apply rec.
+  Qed.          
 End dedicated_induction_principle.
+
+Combined Scheme mut_term_ind from sim_term_ind, sim_list_ind.
+
+(* app brings a value to the head of an application *)
+(* ------------------------------------------------ *) 
 
 Definition app (t u: term) (l: list term): term :=
   match t with
@@ -70,29 +91,33 @@ Proof.
   - exact (LambApp (subst (up σ) t) (subst σ s) (mmap (subst σ) l)).
 Defined.
 
-Lemma rename_subst : forall s xi, rename xi s = s.[ren xi].
+Lemma rename_subst :
+  (forall s xi, rename xi s = s.[ren xi])
+  /\
+  (forall (l: list term) xi, mmap (rename xi) l = l..[ren xi]).
 Proof.
-  induction s using sim_term_ind ; intros ; simpl ; f_equal ;
-    try rewrite up_upren_internal ; auto.
-  - induction H ; asimpl ; f_equal ; auto.
-  - induction H ; asimpl ; f_equal ; auto.
+  apply mut_term_ind ; intros ; simpl ; f_equal ;
+    try rewrite up_upren_internal ; asimpl ; auto.
+  - apply H0.
 Qed.
 
-Lemma subst_id : forall s, s.[ids] = id s.
+Lemma subst_id :
+  (forall s, s.[ids] = id s)
+  /\
+  (forall (l: list term), l..[ids] = id l).
 Proof.
-  induction s using sim_term_ind ; intros ; simpl ; f_equal ;
+  apply mut_term_ind ; intros ; simpl in * ; f_equal ;
     try rewrite up_id_internal ; auto.
-  - induction H ; asimpl ; f_equal ; auto.
-  - induction H ; asimpl ; f_equal ; auto.
 Qed.
 
 Lemma ren_subst_comp :
-  forall s xi sigma, (rename xi s).[sigma] = s.[xi >>> sigma].
+  (forall s xi sigma, (rename xi s).[sigma] = s.[xi >>> sigma])
+  /\
+  (forall (l: list term) xi sigma, (mmap (rename xi) l)..[sigma] = l..[xi >>> sigma]).
 Proof.
-  induction s using sim_term_ind ; intros ; simpl ; f_equal ;
-    try rewrite up_comp_ren_subst ; auto.
-  - induction H ; msimpl ; f_equal ; auto.
-  - induction H ; msimpl ; f_equal ; auto.
+  apply mut_term_ind ; intros ; simpl ; f_equal ;
+    try rewrite up_comp_ren_subst ; msimpl ; auto.
+  - apply H0.
 Qed.
 
 Lemma mmap_append (A: Type) (l1 l2: list A) (f: A -> A) :
@@ -103,55 +128,60 @@ Qed.
 
 Hint Resolve mmap_append : core.
   
-Lemma app_subst_comm : forall t u l σ, (t@(u,l)).[σ] = t.[σ]@(u.[σ], l..[σ]).
+Lemma app_subst_comm t u l σ:
+  (t@(u,l)).[σ] = t.[σ]@(u.[σ], l..[σ]).
 Proof.
-  induction t using sim_term_ind ; intros ; asimpl.
-  - reflexivity.
-  - f_equal.
-  - destruct (σ x) ; asimpl ; f_equal.
-    + apply mmap_append.
-    + apply mmap_append.
+  destruct t ; intros ; asimpl ; try easy.
+  - destruct (σ x) ; asimpl ; f_equal ; auto.
     + rewrite<- app_assoc. f_equal.
       rewrite<- app_comm_cons. f_equal.
-      apply mmap_append.
+      now apply mmap_append.
     + rewrite<- app_assoc. f_equal.
       rewrite<- app_comm_cons. f_equal.
-      apply mmap_append.
-  - f_equal. apply mmap_append.
+      now apply mmap_append.
+  - now rewrite mmap_append.
 Qed.
       
 Lemma subst_ren_comp :
-  forall s xi sigma, rename xi s.[sigma] = s.[sigma >>> rename xi].
+  (forall s xi sigma, rename xi s.[sigma] = s.[sigma >>> rename xi])
+  /\
+  (forall (l: list term) xi sigma, mmap (rename xi) l..[sigma] = l..[sigma >>> rename xi]).
 Proof.
-  induction s using sim_term_ind ; intros ; asimpl ; f_equal ; auto.
-  - rewrite up_comp_subst_ren_internal ; auto.
+  apply mut_term_ind ; intros ; asimpl ; auto.
+  - f_equal. rewrite up_comp_subst_ren_internal ; auto.
     + intros. apply rename_subst.
     + intros. apply ren_subst_comp.
-  - rewrite rename_subst. rewrite app_subst_comm. f_equal.
+  - rewrite (proj1 rename_subst). rewrite app_subst_comm. f_equal.
     + symmetry. apply rename_subst.
-    + rewrite<- rename_subst. apply IHs.
-    + induction H ; asimpl ; f_equal.
-      * rewrite<- rename_subst. apply H.
-      * rewrite<- mmap_comp. apply IHForall.
-  - rewrite up_comp_subst_ren_internal ; auto.
-    + intros. apply rename_subst.
-    + intros. apply ren_subst_comp.
-  - induction H ; asimpl ; f_equal ; auto.
+    + rewrite<- (proj1 rename_subst). apply H.
+    + rewrite<- H0. msimpl. repeat f_equal.
+      f_ext. intro. now rewrite (proj1 rename_subst).
+  - f_equal.
+    + rewrite up_comp_subst_ren_internal ; auto.
+      * intros. apply rename_subst.
+      * intros. apply ren_subst_comp.
+    + apply H0.
+    + rewrite<- H1. now msimpl.
+  - f_equal.
+    + now apply H.
+    + rewrite<- H0. now msimpl.
 Qed.
 
 Lemma subst_comp :
-  forall s sigma tau, s.[sigma].[tau] = s.[sigma >> tau].
+  (forall s sigma tau, s.[sigma].[tau] = s.[sigma >> tau])
+  /\
+  (forall (l: list term) sigma tau, l..[sigma]..[tau] = l..[sigma >> tau]).
 Proof.
-  induction s using sim_term_ind ; intros ; asimpl ; f_equal ; auto.
+  apply mut_term_ind ; intros ; asimpl ; f_equal ; auto.
   - rewrite up_comp_internal ; auto.
     + intros. apply ren_subst_comp.
     + intros. apply subst_ren_comp.
   - rewrite app_subst_comm ; f_equal ; auto.
-    + induction H ; msimpl ; f_equal ; auto.
   - rewrite up_comp_internal ; auto.
     + intros. apply ren_subst_comp.
     + intros. apply subst_ren_comp.
-  - induction H ; msimpl ; f_equal ; auto.
+  - rewrite<- H1. now msimpl.
+  - rewrite<- H0. now msimpl.    
 Qed.
     
 Instance SubstLemmas_term : SubstLemmas term.
@@ -190,6 +220,8 @@ Section Compatibilty.
     with sim_comp_ind' := Induction for comp' Sort Prop.
 
 End Compatibilty.
+
+Combined Scheme mut_comp_ind from sim_comp_ind, sim_comp_ind'.
 
 Hint Constructors comp comp' : core.
 
@@ -254,11 +286,12 @@ Section CompatibilityLemmas.
   Lemma step_comp_append1 :
     forall l1 l1', step' l1 l1' -> forall l2, step' (l1 ++ l2) (l1' ++ l2).
   Proof.
-    intros l1 l1' H. induction H ; intros.
+    intros l1 l1' H.
+    induction H ; intros.
     - repeat rewrite<- app_comm_cons.
-      constructor. assumption.
+      now constructor. 
     - repeat rewrite<- app_comm_cons.
-      constructor. apply IHcomp'.
+      constructor. now apply IHcomp'.
   Qed.    
 
   Lemma step_comp_append2 :
@@ -270,16 +303,16 @@ Section CompatibilityLemmas.
   Lemma step_comp_app1 :
     forall v v', step v v' -> forall u l, step v@(u,l) v'@(u,l).
   Proof.
-    intros v v' H. induction H ; intros ; asimpl ;
-      constructor ; try apply step_comp_append1 ; try assumption.
+    intros v v' H.
+    destruct H ; intros ; asimpl ;
+      constructor ; try apply step_comp_append1 ; try easy.
     - inversion H.
       + inversion H0 ; subst ; asimpl.
-        right. constructor. reflexivity.
+        right. now constructor. 
       + inversion H0 ; subst ; asimpl.
         right. constructor.
-        destruct (t0.[u0/]) ; asimpl ; f_equal.
-      * rewrite<- app_assoc. reflexivity.
-      * rewrite<- app_assoc. reflexivity.
+        destruct (t0.[u0/]) ; asimpl ;
+          f_equal ; now rewrite<- app_assoc. 
   Qed.
 
   Proposition multistep_comp_app1 :
@@ -287,9 +320,8 @@ Section CompatibilityLemmas.
   Proof.
     intros. induction H.
     - constructor.
-    - apply rt1n_trans with (y@(u,l)).
-      + apply step_comp_app1. assumption.
-      + assumption.
+    - apply rt1n_trans with (y@(u,l)) ; try easy.
+      + now apply step_comp_app1. 
   Qed.
   
   Lemma step_comp_app2 :
@@ -311,9 +343,8 @@ Section CompatibilityLemmas.
   Proof.
     intros. induction H.
     - constructor.
-    - apply rt1n_trans with (v@(y,l)).
-      + apply step_comp_app2. assumption.
-      + assumption.
+    - apply rt1n_trans with (v@(y,l)) ; try easy.
+      + now apply step_comp_app2. 
   Qed.
   
   Lemma step_comp_app3 :
@@ -335,33 +366,11 @@ Section CompatibilityLemmas.
   Proof.
     intros. induction H.
     - constructor.
-    - apply rt1n_trans with (v@(u,y)).
-      + apply step_comp_app3. assumption.
-      + assumption.
+    - apply rt1n_trans with (v@(u,y)) ; try easy.
+      + now apply step_comp_app3. 
   Qed.
   
 End CompatibilityLemmas.
-
-Section StepSubstitution.
-
-  Lemma step_subst :
-    forall s t, step s t -> forall σ, step s.[σ] t.[σ].
-  Proof.
-    intros s t H.
-    induction H using sim_comp_ind
-      with (P0 := fun l l' (_: step' l l') => forall σ, step' l..[σ] l'..[σ]) ;
-      intros ; autounfold ; asimpl ;
-      try (now constructor ; apply IHcomp).
-
-    - apply step_comp_app2. apply IHcomp.
-    - apply step_comp_app3. apply IHcomp.
-    - destruct b as [Beta1 | Beta2] ; constructor.
-      + induction Beta1. subst. left. constructor. autosubst.
-      + induction Beta2. subst. right. asimpl. constructor.
-        rewrite app_subst_comm. f_equal. autosubst.
-  Qed.
-
-End StepSubstitution.
 
 (* Typing Rules *)
 (* ------------ *)
@@ -394,3 +403,5 @@ Hint Constructors sequent list_sequent : core.
 
 Scheme sim_sequent_ind := Induction for sequent Sort Prop
   with sim_list_sequent_ind := Induction for list_sequent Sort Prop.
+
+Combined Scheme mut_sequent_ind from sim_sequent_ind, sim_list_sequent_ind.

@@ -29,33 +29,35 @@ Qed.
 (* Subst and Ren Lemmas *)
 (* -------------------- *)
 
-Definition list_type_renaming Γ A l B (_: list_sequent Γ A l B)
-  := forall Δ ξ, Γ = (ξ >>> Δ) -> list_sequent Δ A l..[ren ξ] B.
-
-Lemma type_renaming Γ t A (s: sequent Γ t A) :
-  forall Δ ξ, Γ = (ξ >>> Δ) -> sequent Δ t.[ren ξ] A.
+Lemma type_renaming :
+  forall Γ,
+    (forall t A, sequent Γ t A ->
+            forall Δ ξ, Γ = (ξ >>> Δ) -> sequent Δ t.[ren ξ] A)
+    /\
+    (forall A l B, list_sequent Γ A l B ->
+              forall Δ ξ, Γ = (ξ >>> Δ) -> list_sequent Δ A l..[ren ξ] B).
 Proof.
-  induction s using sim_sequent_ind
-    with (P0 := list_type_renaming) ;
+  apply mut_sequent_ind ; 
     intros ; subst ; asimpl ; econstructor ; eauto.
-  - apply IHs. autosubst.
-  - apply IHs1. autosubst.
+  - apply H. now autosubst.
+  - apply H. now autosubst.
 Qed.      
 
-Definition list_type_substitution Γ A l B (ls:list_sequent Γ A l B) :=
-  forall σ Δ, (forall x, sequent Δ (σ x) (Γ x)) -> list_sequent Δ A l..[σ] B.
-
-Lemma type_substitution Γ t A (s: sequent Γ t A) :
-  forall σ Δ, (forall x, sequent Δ (σ x) (Γ x)) -> sequent Δ t.[σ] A.
+Lemma type_substitution :
+  forall Γ, 
+    (forall t A, sequent Γ t A ->
+            forall σ Δ, (forall x, sequent Δ (σ x) (Γ x)) -> sequent Δ t.[σ] A)
+    /\
+    (forall A l B, list_sequent Γ A l B ->
+               forall σ Δ, (forall x, sequent Δ (σ x) (Γ x)) -> list_sequent Δ A l..[σ] B).
 Proof.  
-  induction s using sim_sequent_ind
-    with (P0 := list_type_substitution) ;
+  apply mut_sequent_ind ; 
     intros ; asimpl ; subst ; try econstructor ; eauto.
-  - apply IHs. destruct x ; asimpl ; auto.
+  - apply H. destruct x ; asimpl ; auto.
     + eapply type_renaming ; eauto.
   - eapply app_is_admissible ; eauto.
-    rewrite<- e. apply H.
-  - apply IHs1. destruct x ; asimpl ; auto.
+    rewrite<- e. apply H1.
+  - apply H. destruct x ; asimpl ; auto.
     + eapply type_renaming ; eauto.
 Qed.        
 
@@ -89,18 +91,13 @@ Proof.
     eapply type_substitution ; eauto.
     + destruct x ; asimpl ; eauto.
 Qed.
-  
-Definition list_type_preservation (l l': list term) (_: step' l l') :=
-  forall Γ A B, list_sequent Γ A l B -> list_sequent Γ A l' B.
 
-Hint Unfold list_type_preservation : core.
-
-Theorem type_preservation : 
-  forall t t', step t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A.
+Theorem type_preservation :
+  (forall t t', step t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A)
+  /\
+  (forall l l', step' l l' -> forall Γ A B, list_sequent Γ A l B -> list_sequent Γ A l' B).
 Proof.
-  intros t t' H.
-  induction H using sim_comp_ind with (P0 := list_type_preservation) ;
-    autounfold in * ; intros ;
+  apply mut_comp_ind ; intros ;
     try (now inversion H ; econstructor ; eauto) ;
     try (now inversion H0 ; econstructor ; eauto).
     

@@ -7,35 +7,37 @@ Import ListNotations.
 (* Subst and Ren Lemmas *)
 (* -------------------- *)
 
-Definition list_type_renaming Γ A l B (_: list_sequent Γ A l B)
-  := forall Δ ξ, Γ = (ξ >>> Δ) -> list_sequent Δ A l..[ren ξ] B.
-
-Lemma type_renaming Γ t A (s: sequent Γ t A) :
-  forall Δ ξ, Γ = (ξ >>> Δ) -> sequent Δ t.[ren ξ] A.
+Lemma type_renaming :
+  forall Γ,
+    (forall t A, sequent Γ t A ->
+            forall Δ ξ, Γ = (ξ >>> Δ) -> sequent Δ t.[ren ξ] A)
+    /\
+    (forall A l B, list_sequent Γ A l B ->
+              forall Δ ξ, Γ = (ξ >>> Δ) -> list_sequent Δ A l..[ren ξ] B).
 Proof.
-  induction s using sim_sequent_ind
-    with (P0 := list_type_renaming) ;
+  apply mut_sequent_ind ; 
     intros ; subst ; econstructor ; eauto.
-  - assert (rw : up (ren ξ) = ren (upren ξ)). { autosubst. }
-    rewrite rw. apply IHs. autosubst.
+  - assert (simple_rw : up (ren ξ) = ren (upren ξ)). { autosubst. }
+    rewrite simple_rw. apply H. now autosubst.
 Qed.      
 
-Definition list_type_substitution Γ A l B (ls:list_sequent Γ A l B) :=
-  forall σ Δ, (forall x, sequent Δ (σ x) (Γ x)) -> list_sequent Δ A l..[σ] B.
-
-Lemma type_substitution Γ t A (s: sequent Γ t A) :
-  forall σ Δ, (forall x, sequent Δ (σ x) (Γ x)) -> sequent Δ t.[σ] A.
+Lemma type_substitution :
+  forall Γ, 
+    (forall t A, sequent Γ t A ->
+            forall σ Δ, (forall x, sequent Δ (σ x) (Γ x)) -> sequent Δ t.[σ] A)
+    /\
+    (forall A l B, list_sequent Γ A l B ->
+               forall σ Δ, (forall x, sequent Δ (σ x) (Γ x)) -> list_sequent Δ A l..[σ] B).
 Proof.  
-  induction s using sim_sequent_ind
-    with (P0 := list_type_substitution) ;
+  apply mut_sequent_ind ; 
     intros ; subst ; try econstructor ; eauto.
-  - apply IHs. destruct x ; asimpl.
-    + constructor. trivial.
+  - apply H. destruct x ; asimpl.
+    + now constructor. 
     + eapply type_renaming ; eauto.
 Qed.        
 
-(* Subject Reduction *)
-(* ----------------- *)
+(*   Lemmas for base steps   *)
+(* ------------------------- *)
 
 Lemma beta1_type_preservation :
   forall t t', β1 t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A.
@@ -87,24 +89,20 @@ Proof.
   econstructor ; eauto.
   - eapply append_is_admissible ; eauto.
 Qed.    
-  
-Definition list_type_preservation (l l': list term) (_: step' l l') :=
-  forall Γ A B, list_sequent Γ A l B -> list_sequent Γ A l' B.
 
-Hint Unfold list_type_preservation : core.
+(* Subject Reduction for λm *)
+(* ------------------------ *)
 
-(* type_preservation : forall t t', step t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A. *)
-
-Theorem type_preservation t t' :
-  step t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A.
+Theorem type_preservation :
+  (forall t t', step t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A)
+  /\
+  (forall l l', step' l l' -> forall Γ A B, list_sequent Γ A l B -> list_sequent Γ A l' B).
 Proof.
-  intros H. 
-  
-  induction H using sim_comp_ind with (P0 := list_type_preservation) ;
-    autounfold in * ; intros ;
+  apply mut_comp_ind ; intros ;
     try (now inversion H ; econstructor ; eauto) ;
     try (now inversion H0 ; econstructor ; eauto).
-
+  (* with this tactics we automatically solve trivial goals! *)
+  
   - inversion b.
     + inversion H0.
       * eapply beta1_type_preservation ; eassumption.

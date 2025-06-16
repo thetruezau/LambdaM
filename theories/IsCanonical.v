@@ -12,8 +12,10 @@ Import ListNotations.
 Inductive is_canonical: term -> Prop :=
 | cVar (x: var) : is_canonical (Var x)
 | cLam (t: {bind term}) : is_canonical t -> is_canonical (Lam t)                                                      
-| cVarApp (x: var) (u: term) (l: list term) : is_canonical u -> is_canonical_list l -> is_canonical (mApp (Var x) u l)
-| cLamApp (t: {bind term}) (u: term) (l: list term) : is_canonical t -> is_canonical u -> is_canonical_list l -> is_canonical (mApp (Lam t) u l)
+| cVarApp (x: var) (u: term) (l: list term) :
+  is_canonical u -> is_canonical_list l -> is_canonical (mApp (Var x) u l)
+| cLamApp (t: {bind term}) (u: term) (l: list term) :
+  is_canonical t -> is_canonical u -> is_canonical_list l -> is_canonical (mApp (Lam t) u l)
 
 with is_canonical_list: list term -> Prop :=
 | cNil : is_canonical_list []
@@ -23,6 +25,8 @@ Hint Constructors is_canonical is_canonical_list : core.
 
 Scheme sim_is_canonical_ind := Induction for is_canonical Sort Prop
   with sim_is_canonical_list_ind := Induction for is_canonical_list Sort Prop.  
+
+Combined Scheme mut_is_canonical_ind from sim_is_canonical_ind, sim_is_canonical_list_ind.
 
 Definition app (v u: term) (l: list term) : term :=
   match v with
@@ -45,7 +49,8 @@ Lemma app_is_closed :
            is_canonical (app t u l).
 Proof.
   intros t u l it iu il.
-  destruct t as [x | t | v u' l'] ; asimpl ; try inversion it ; subst ; auto.
+  destruct t as [x | t | v u' l'] ; asimpl ;
+    try inversion it ; subst ; auto.
 Qed.
 
 Hint Resolve app_is_closed : core.
@@ -74,29 +79,29 @@ Definition is_canonical_subst (σ: var -> term) :=
 Hint Unfold is_canonical_subst : core.
 
 Lemma ren_is_closed :
-  forall t, is_canonical t -> forall ξ, is_canonical (t.[ren ξ]).
+  (forall t, is_canonical t -> forall ξ, is_canonical t.[ren ξ])
+  /\
+  (forall l, is_canonical_list l -> forall ξ, is_canonical_list l..[ren ξ]).
 Proof.
-  induction 1 using sim_is_canonical_ind
-    with (P0:=fun l _ => forall ξ, is_canonical_list (mmap (subst (ren ξ)) l)) ; intros ; asimpl ; auto.
+  apply mut_is_canonical_ind ; intros ; asimpl ; auto.
 Qed. 
-
-Hint Resolve ren_is_closed : core.
 
 Lemma up_subst_is_closed :
   forall σ, is_canonical_subst σ -> is_canonical_subst (up σ).
 Proof.
-  intros σ H. unfold is_canonical_subst.
-  destruct x ; asimpl ; auto.
+  intros σ H. autounfold.
+  destruct x ; asimpl ; try easy.
+  - now apply ren_is_closed.
 Qed.
 
-Hint Resolve up_subst_is_closed : core.
+Local Hint Resolve up_subst_is_closed : core.
 
 Theorem subst_is_closed :
-  forall t, is_canonical t -> forall σ, is_canonical_subst σ -> is_canonical t.{σ}.
+  (forall t, is_canonical t -> forall σ, is_canonical_subst σ -> is_canonical t.{σ})
+  /\
+  (forall l, is_canonical_list l -> forall σ, is_canonical_subst σ -> is_canonical_list l..{σ}).
 Proof.
-  intros t it.
-  induction it using sim_is_canonical_ind
-    with (P0:=fun l _ => forall σ, is_canonical_subst σ -> is_canonical_list l..{σ}) ; intros ; asimpl ; auto.
+  apply mut_is_canonical_ind ; intros ; asimpl ; auto.
 Qed.
           
 (* Redução em termos canónicos *)

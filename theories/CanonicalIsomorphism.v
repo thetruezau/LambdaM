@@ -29,32 +29,32 @@ Fixpoint i (t: Canonical.term) : LambdaM.term :=
 (* i e h são bijecções *)
 (* ------------------- *)
 
-Proposition inversion1 : forall (t: LambdaM.term), is_canonical t -> i (h t) = t.
+Proposition inversion1 :
+  (forall (t: LambdaM.term), is_canonical t -> i (h t) = t)
+  /\
+  (forall (l: list LambdaM.term), is_canonical_list l ->
+                             map i (map h l) = l).
 Proof.
-  intros t it.
-  induction it using sim_is_canonical_ind
-    with (P0 := fun l (_: is_canonical_list l) => map i (map h l) = l) ;
-    asimpl ; repeat f_equal ; auto.
-Qed.
+  apply mut_is_canonical_ind ; intros ; asimpl ;
+    repeat f_equal ; auto.
+Qed.  
 
-Proposition inversion2 : forall (t: Canonical.term), h (i t) = t.
+Proposition inversion2 :
+  (forall (t: Canonical.term), h (i t) = t)
+  /\
+  (forall (l: list Canonical.term), map h (map i l) = l).
 Proof.
-  intros t.
-  induction t using Canonical.sim_term_ind ; asimpl ; repeat f_equal ; auto.
-  all: induction H ; asimpl ; f_equal ; auto.
+  apply Canonical.mut_term_ind ; intros ; asimpl ;
+    repeat f_equal ; auto.
 Qed.
 
 (* Alguns lemas para auxiliar os resultados seguintes *)
 (* -------------------------------------------------- *)
 
-Local Hint Resolve up_subst_is_closed : core.
-
 Lemma app_subst_pres :
   forall t u l σ, (t@(u,l)).[σ] = t.[σ]@(u.[σ], l..[σ]).
 Proof.
-  destruct t ; intros ; asimpl.
-  - reflexivity.
-  - reflexivity.
+  destruct t ; intros ; asimpl ; try easy.
   - destruct (σ x) ; asimpl ; f_equal.
     + apply map_app.
     + apply map_app.
@@ -69,133 +69,135 @@ Proof.
     + repeat rewrite<- app_assoc. f_equal. apply map_app.
 Qed.
 
-Lemma h_ren_pres :
-  forall t ξ, h t.[ren ξ] = (h t).[ren ξ].
-Proof.
-  induction t using LambdaM.sim_term_ind ; intros ; asimpl.
-  - reflexivity.
-  - f_equal. trivial.
-  - rewrite app_subst_pres. f_equal ; trivial.
-    + induction H ; asimpl ; msimpl in IHForall ; f_equal ; trivial.
-Qed.
-
-Local Hint Resolve h_ren_pres : core.
-
 Lemma h_app_pres :
   forall t u l, h (app t u l) = (h t)@(h u, map h l).
 Proof.
-  destruct t ; intros ; try reflexivity.
+  destruct t ; intros ; try easy.
   - asimpl. destruct (h t1) ; asimpl in *.
     + f_equal. apply map_app.
     + f_equal. apply map_app.
     + f_equal. repeat rewrite<- app_assoc. f_equal.
-      rewrite map_app. asimpl. reflexivity.
+      rewrite map_app. now asimpl.
     + f_equal. repeat rewrite<- app_assoc. f_equal.
-      rewrite map_app. asimpl. reflexivity.
+      rewrite map_app. now asimpl. 
 Qed.
 
 Lemma i_app_pres :
   forall t u l, i (t@(u,l)) = app (i t) (i u) (map i l).
 Proof.
   intros t u l.
-  induction t using Canonical.sim_term_ind ; asimpl ; f_equal ; apply map_app.
+  destruct t ; asimpl ; f_equal ; apply map_app.
+Qed.
+
+Lemma h_ren_pres :
+  (forall t ξ, h t.[ren ξ] = (h t).[ren ξ])
+  /\
+  (forall l ξ, map h (l..[ren ξ]) = (map h l)..[ren ξ]).
+Proof.
+  apply LambdaM.mut_term_ind ; intros ; asimpl ; auto.
+  - now f_equal.
+  - rewrite app_subst_pres. now f_equal.
+  - now f_equal.
 Qed.
 
 Lemma i_ren_pres :
-  forall t, forall ξ, i t.[ren ξ] = (i t).[ren ξ].
+  (forall t, forall ξ, i t.[ren ξ] = (i t).[ren ξ])
+  /\
+  (forall l ξ, map i (l..[ren ξ]) = (map i l)..[ren ξ]).
 Proof.
-  induction t using Canonical.sim_term_ind ; intros ; asimpl ;
-    repeat rewrite up_upren_internal ; simpl ; f_equal ; auto.
-  all: induction H ; asimpl ; f_equal ; auto.
+  apply Canonical.mut_term_ind ; intros ; asimpl ; auto.
+  - now f_equal.
+  - simpl. now f_equal.
+  - now repeat f_equal.
+  - now f_equal.
 Qed.
 
-Local Hint Resolve i_ren_pres : core.
+Lemma h_up_subst σ : up σ >>> h = up (σ >>> h).
+Proof.
+  f_ext. destruct x ; asimpl ; try easy. 
+  - apply h_ren_pres.
+Qed.
 
-Lemma h_simple_subst : forall u, ((h u) .: ids) = (u .: ids) >>> h.
-Proof. intro. f_ext. destruct x ; reflexivity. Qed.
-
-Lemma i_simple_subst : forall u, ((i u) .: ids) = (u .: ids) >>> i.
-Proof. intro u. f_ext. destruct x ; reflexivity. Qed.
+Lemma i_up_subst σ : up σ >>> i = up (σ >>> i).
+Proof.
+  f_ext. destruct x ; asimpl ; try easy. 
+  - apply i_ren_pres.
+Qed.
 
 (* As bijecções preservam a substituição *)
 (* ------------------------------------- *)
 
-Theorem h_subst_pres :
-  forall (t: LambdaM.term), is_canonical t ->
-             forall σ, is_canonical_subst σ -> h (t.{σ}) = (h t).[σ >>> h].
+Theorem h_subst_pres:
+  (forall t, is_canonical t -> forall σ, is_canonical_subst σ -> h (t.{σ}) = (h t).[σ >>> h])
+  /\
+    (forall l, is_canonical_list l -> forall σ, is_canonical_subst σ -> map h (l..{σ}) = (map h l)..[σ >>> h])
+
+.
 Proof.
-  intros t it.
-  induction it using sim_is_canonical_ind
-    with (P0 := fun l (_: is_canonical_list l) => forall σ, is_canonical_subst σ -> map h l..{σ} = (map h l)..[σ >>> h]) ; intros ; asimpl ; trivial.
-  - f_equal. rewrite IHit ; auto.
-    f_equal. f_ext. destruct x ; asimpl ; auto.
-  - rewrite h_app_pres.
-    + f_equal ; auto.
-  - f_equal ; auto. rewrite IHit1 ; auto.
-    f_equal. f_ext. destruct x ; asimpl ; auto.
-  - f_equal ; auto.
+  apply LambdaM.mut_term_ind ; intros ; asimpl ; try easy.
+  - f_equal. rewrite H.
+    + now rewrite h_up_subst.
+    + now inversion H0.
+    + now apply up_subst_is_closed.
+      
+  - inversion H2 ; subst.
+    + rewrite h_app_pres, app_subst_pres. f_equal ; auto.
+    + rewrite h_app_pres, app_subst_pres. f_equal ; auto.
+
+  - inversion H1 ; subst.
+    f_equal ; auto.
 Qed.
 
 Theorem i_subst_pres :
-  forall (t: Canonical.term), forall σ, i t.[σ] = (i t).{σ >>> i}.
+  (forall t σ, i t.[σ] = (i t).{σ >>> i})
+  /\
+  (forall l σ, map i l..[σ] = (map i l)..{σ >>> i}).
 Proof.
-  induction t using Canonical.sim_term_ind ; intros ; asimpl ; repeat f_equal ; auto.
-  - rewrite IHt. f_equal. f_ext.
-    destruct x ; asimpl ; auto.
-  - rewrite i_app_pres. f_equal ; auto.
-    + induction H ; asimpl ; f_equal ; auto.
-  - rewrite IHt1. f_equal. f_ext.
-    destruct x ; asimpl ; auto.
-  - induction H ; asimpl ; f_equal ; auto.
+  apply Canonical.mut_term_ind ; intros ; asimpl ;
+    repeat f_equal ; auto.
+  - now rewrite<- i_up_subst. 
+  - rewrite i_app_pres. now f_equal.
+  - now rewrite<- i_up_subst. 
 Qed.
 
 (* As bijecções preservam a relação de um passo *)
 (* -------------------------------------------- *)
 
+Lemma h_simple_subst u : (h u).:ids = (u.:ids)>>>h.
+Proof. autosubst. Qed.
+
 Theorem h_step_pres :
-  forall (t t': LambdaM.term), step_can t t' -> is_canonical t -> Canonical.step (h t) (h t').
+  (forall (t t': LambdaM.term), step_can t t' -> is_canonical t -> Canonical.step (h t) (h t'))
+  /\ 
+  (forall l l', step_can' l l' -> is_canonical_list l -> Canonical.step'(map h l) (map h l')). 
 Proof.
   pose Canonical.step_is_compatible as H. destruct H.  
-  
-  intros t t' H.
-  induction H using LambdaM.sim_comp_ind
-    with (P0 := fun l1 l2 (_: step_can' l1 l2) => is_canonical_list l1 -> Canonical.step' (map h l1) (map h l2)) ; intro it ; inversion it ; subst ; asimpl ; auto.
-  
-  - (* temos hipóteses que são absurdas *)
-    inversion H. inversion H0 ; inversion H5.
-  - inversion H ; subst ; asimpl.
-    + constructor.
-      apply cLam in H3. apply IHcomp in H3. inversion H3 ; trivial.
-      * (* temos hipóteses que são absurdas *)
-        inversion H0 ; asimpl in H7 ; inversion H7.
-    + (* temos hipóteses que são absurdas *)
-      inversion H0 ; inversion H1.
-  - (* temos hipóteses que são absurdas *)
-    inversion b ; inversion H.
-  - (* temos hipóteses que são absurdas *) 
-    inversion b ; inversion H0.
-  - (* temos hipóteses que são absurdas *)
-    inversion b ; inversion H1.
-  - assert (cons_lemma :
-             forall u, is_canonical u -> is_canonical_subst (u .: ids)).
-    { intro. autounfold. destruct x ; asimpl ; trivial. }
-      
-    inversion H1 ; subst ; asimpl.
-    + inversion b ; subst.
-      * constructor. left.
-        inversion H2 ; subst. constructor.
-        rewrite h_simple_subst. apply h_subst_pres ; auto.
-      * (* temos hipóteses que são absurdas *)
-        inversion H2.
-    + inversion b ; subst.
-      * (* temos hipóteses que são absurdas *)
-        inversion H4.
-      * constructor. right.
-        inversion H4 ; subst. constructor.
-        rewrite h_app_pres ; asimpl ; trivial.
-        f_equal ; trivial.
-        ** rewrite h_simple_subst. apply h_subst_pres ; auto.
+  pose Canonical.step_comp_app1.
+  pose Canonical.step_comp_app2.
+  pose Canonical.step_comp_app3.
+    
+  apply LambdaM.mut_comp_ind ; intros ; asimpl ;
+    try inversion H0 ; subst ; auto.
+
+  - inversion b ; subst.
+    * constructor. left.
+      inversion H0 ; subst. asimpl. constructor.
+      inversion H ; subst.
+      rewrite h_simple_subst.
+      rewrite (proj1 h_subst_pres) ; try easy.
+      ** autounfold. now destruct x ; asimpl.
+        
+    * constructor. right.
+      inversion H0 ; subst. asimpl. constructor.
+      inversion H ; subst.            
+      rewrite h_app_pres. asimpl. f_equal.
+      rewrite h_simple_subst.
+      rewrite (proj1 h_subst_pres) ; try easy.
+      ** autounfold. now destruct x ; asimpl.
 Qed.
+
+Lemma i_simple_subst u : (i u).:ids = (u.:ids)>>>i.
+Proof. autosubst. Qed.
 
 Theorem i_step_pres :
   forall (t t': Canonical.term), Canonical.step t t' -> step_can (i t) (i t').
@@ -217,15 +219,10 @@ Qed.
 (* Lemas adicionais sobre as bijecções *)
 (* ----------------------------------- *)
 
-Lemma i_image_is_canonical : forall t, is_canonical (i t).
+Lemma i_image_is_canonical :
+  (forall t, is_canonical (i t))
+  /\
+  (forall l, is_canonical_list (map i l)).
 Proof.
-  intro t.
-  induction t using Canonical.sim_term_ind ; asimpl ; auto.
-  - constructor.
-    + assumption.
-    + induction H ; asimpl ; constructor ; assumption.
-  - constructor.
-    + assumption.
-    + assumption.
-    + induction H ; asimpl ; constructor ; assumption.
+  apply Canonical.mut_term_ind ; intros ; asimpl ; auto.
 Qed.
