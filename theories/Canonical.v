@@ -372,6 +372,23 @@ Section CompatibilityLemmas.
   
 End CompatibilityLemmas.
 
+(* Canonical terms in β normal form *) 
+(* -------------------------------- *) 
+
+Inductive normal: term -> Prop :=
+| nVari x : normal (Vari x)
+| nLamb t : normal t -> normal (Lamb t)
+| nApp x u l : normal u -> normal_list l -> normal (VariApp x u l)
+  
+with normal_list: list term -> Prop :=
+| nNil : normal_list []
+| nCons u l : normal u -> normal_list l -> normal_list (u::l).
+
+Scheme sim_normal_ind := Induction for normal Sort Prop
+  with sim_normal_list_ind := Induction for normal_list Sort Prop.  
+
+Combined Scheme mut_normal_ind from sim_normal_ind, sim_normal_list_ind.
+
 (* Typing Rules *)
 (* ------------ *)
 
