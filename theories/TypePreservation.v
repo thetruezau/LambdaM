@@ -110,9 +110,32 @@ Proof.
     + eapply h_type_preservation ; eassumption.
 Qed.
 
-Corollary type_preservation' Γ t t' A :
-  sequent Γ t A /\ step t t' -> sequent Γ t' A.
+Corollary type_preservation_multistep Γ t t' A:
+  LambdaM.sequent Γ t A ->
+  LambdaM.multistep t t' ->  
+  LambdaM.sequent Γ t' A.
 Proof.
-  intro H. destruct H as [H1 H2].
-  eapply type_preservation ; eassumption.
+  intros H1 H2. 
+  induction H2 ; subst ; try easy.
+  apply IHclos_refl_trans_1n.
+  apply (proj1 type_preservation) with x ; try easy.
+Qed.
+
+(* As a corollary we get subject reduction *)
+(*       for the canonical subsystem       *)
+(* --------------------------------------- *)
+
+Require Import Canonical CanonicalIsomorphism Conservativeness.
+
+Corollary type_preservation' Γ t t' A :
+  Canonical.sequent Γ t A ->
+  Canonical.step t t' ->
+  Canonical.sequent Γ t' A.
+Proof.
+  intros H1 H2.
+  rewrite<- (proj1 inversion2) with t'.
+  apply h_type_pres.
+  apply type_preservation_multistep with (t:=i t).
+  - now apply i_type_pres.
+  - now apply conservativeness1.
 Qed.

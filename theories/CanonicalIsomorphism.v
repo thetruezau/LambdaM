@@ -3,7 +3,7 @@ Require Import Autosubst.Autosubst.
 Require Import Coq.Relations.Relation_Definitions.
 Require Import Coq.Relations.Relation_Operators.
 
-Require Import LambdaM Canonical IsCanonical.
+Require Import LambdaM Canonical IsCanonical SimpleTypes.
 
 Import ListNotations.
 
@@ -89,6 +89,9 @@ Proof.
   destruct t ; asimpl ; f_equal ; apply map_app.
 Qed.
 
+(* Ren Preservation Lemmas *)
+(* ----------------------- *)
+
 Lemma h_ren_pres :
   (forall t ξ, h t.[ren ξ] = (h t).[ren ξ])
   /\
@@ -130,7 +133,7 @@ Qed.
 Theorem h_subst_pres:
   (forall t, is_canonical t -> forall σ, is_canonical_subst σ -> h (t.{σ}) = (h t).[σ >>> h])
   /\
-    (forall l, is_canonical_list l -> forall σ, is_canonical_subst σ -> map h (l..{σ}) = (map h l)..[σ >>> h])
+  (forall l, is_canonical_list l -> forall σ, is_canonical_subst σ -> map h (l..{σ}) = (map h l)..[σ >>> h])
 
 .
 Proof.
@@ -200,12 +203,14 @@ Lemma i_simple_subst u : (i u).:ids = (u.:ids)>>>i.
 Proof. autosubst. Qed.
 
 Theorem i_step_pres :
-  forall (t t': Canonical.term), Canonical.step t t' -> step_can (i t) (i t').
+  (forall t t', Canonical.step t t' -> step_can (i t) (i t'))
+  /\
+  (forall l1 l2, Canonical.step' l1 l2 -> step_can' (map i l1) (map i l2)).
 Proof.
-  intros t t' H.
-  induction H using Canonical.sim_comp_ind
-    with (P0 := fun l1 l2 (_: Canonical.step' l1 l2) => step_can' (map i l1) (map i l2)) ; asimpl ; try (now constructor ; assumption).
-  - constructor. constructor. assumption.
+  apply Canonical.mut_comp_ind ;
+    intros ; asimpl ; try (now constructor).
+
+  - constructor. now constructor. 
   - inversion b.
     + inversion H ; subst ; asimpl.
       constructor. left. constructor.
@@ -215,6 +220,51 @@ Proof.
       rewrite i_app_pres. f_equal ; asimpl ; trivial.
       rewrite i_simple_subst. apply i_subst_pres.
 Qed.
+
+(* Isomorfismo ao nível dos tipos! *)
+(* ------------------------------- *)
+
+Lemma append_is_admissible Γ l l' A B C :
+  Canonical.list_sequent Γ A l B -> Canonical.list_sequent Γ B l' C ->
+  Canonical.list_sequent Γ A (l++l') C.
+Proof.                  
+  intros H1 H2.
+  induction H1 ; asimpl ; auto.
+Qed.  
+
+Lemma app_is_admissible Γ t u l A B C :
+  Canonical.sequent Γ t (Arr A B) ->
+  Canonical.sequent Γ u A ->
+  Canonical.list_sequent Γ B l C ->
+  Canonical.sequent Γ t@(u,l) C.
+Proof.
+  destruct t ; intros ;
+    inversion H ; subst ;
+    econstructor ; eauto.
+  - eapply append_is_admissible ; eauto.
+  - eapply append_is_admissible ; eauto.
+Qed.
+
+Lemma h_type_pres :
+  forall Γ,
+    (forall t A, LambdaM.sequent Γ t A -> Canonical.sequent Γ (h t) A)
+    /\
+    (forall A l B, LambdaM.list_sequent Γ A l B -> Canonical.list_sequent Γ A (map h l) B).
+Proof.
+  apply LambdaM.mut_sequent_ind ;
+    intros ; asimpl ; auto.
+  - eapply app_is_admissible ; eauto.
+Qed.  
+
+Lemma i_type_pres :
+  forall Γ,
+    (forall t A, Canonical.sequent Γ t A -> LambdaM.sequent Γ (i t) A)
+    /\
+    (forall A l B, Canonical.list_sequent Γ A l B -> LambdaM.list_sequent Γ A (map i l) B).
+Proof.
+  apply Canonical.mut_sequent_ind ;
+    intros ; asimpl ; try econstructor ; eauto.
+Qed.  
 
 (* Lemas adicionais sobre as bijecções *)
 (* ----------------------------------- *)
