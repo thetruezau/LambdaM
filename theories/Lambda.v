@@ -23,8 +23,8 @@ Instance SubstLemmas_term : SubstLemmas term. derive. Defined.
 Inductive step : relation term :=
 | Step_Beta s s' t : s' = s.[t .: ids] ->
                      step (App (Lam s) t) s'
-| Step_Abs (s s': {bind term}) : step s s' ->
-                                 step (Lam s) (Lam s')
+| Step_Abs s s' : step s s' ->
+                  step (Lam s) (Lam s')
 | Step_App1 s s' t: step s s' ->
                     step (App s t) (App s' t)
 | Step_App2 s t t': step t t' ->

@@ -2,9 +2,6 @@ Require Import List.
 Require Import SimpleTypes Canonical.
 Require Import Autosubst.Autosubst.
 
-Require Import Coq.Relations.Relation_Definitions.
-Require Import Coq.Relations.Relation_Operators.
-
 Import ListNotations.
 
 (* Append and @ admissability *)
@@ -108,23 +105,3 @@ Proof.
     + eapply beta1_type_preservation ; eassumption.
     + eapply beta2_type_preservation ; eassumption.
 Qed.
-  
-(* Subject Reduction as a corollary *)
-(* -------------------------------- 
-
-Require Import LambdaM CanonicalIsomorphism.
-Require Import TypePreservation Conservativeness.
-
-Corollary type_preservation' Γ t t' A :
-  Canonical.sequent Γ t A /\ Canonical.step t t' -> Canonical.sequent Γ t' A.
-Proof.
-  intros. destruct H as [Ht Hs].
-  rewrite<- (proj1 inversion2) with t'.
-  apply h_type_preservation.
-  apply type_preservation_multistep with (t:=i t).
-  split.
-  - now apply i_type_preservation.
-  - now apply conservativeness1.
-Qed.
-
-*)
