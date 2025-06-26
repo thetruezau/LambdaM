@@ -110,11 +110,16 @@ Section IsCompatible.
   
 End IsCompatible.
 
+Theorem comp_is_compatible B : is_compatible (comp B) (comp' B).
+Proof.
+  split ; autounfold ; intros ; constructor ; assumption.
+Qed.
+
 Theorem clos_refl_trans_pres_comp :
   forall R R', is_compatible R R' ->
           is_compatible (clos_refl_trans_1n _ R) (clos_refl_trans_1n _ R').
 Proof.
-  intros. destruct H. 
+  intros R R' H. destruct H. 
   (* esta tática resolve todos os goals! *)      
   split ; intros ; induction H ; econstructor ; eauto.
 Qed.
@@ -136,25 +141,60 @@ Inductive H: relation term :=
 
 Definition step := comp (union _ (union _ β1 β2) H).
 Definition step' := comp' (union _ (union _ β1 β2) H).
+Hint Unfold step step' : core.
 
-Hint Unfold step step': core.
+Definition step_β := comp (union _ β1 β2).
+Definition step_β' := comp' (union _ β1 β2).
+Hint Unfold step_β step_β' : core.
 
-Proposition step_is_compatible : is_compatible step step'.
-Proof.
-  split ; autounfold ; intros ; constructor ; assumption.
-Qed.
+Definition step_H := comp H.
+Definition step_H' := comp' H.
+Hint Unfold step_H step_H' : core.
 
 Definition multistep := clos_refl_trans_1n _ step.
 Definition multistep' := clos_refl_trans_1n _ step'.
-
 Hint Unfold multistep multistep': core.
 
-Proposition multistep_is_compatible :
-  is_compatible multistep multistep'.
-Proof.
-  apply clos_refl_trans_pres_comp. apply step_is_compatible.
-Qed.  
+Definition multistep_H := clos_refl_trans_1n _ step_H.
+Definition multistep_H' := clos_refl_trans_1n _ step_H'.
+Hint Unfold multistep_H multistep_H': core.
 
+Corollary step_is_compatible : is_compatible step step'.
+Proof. now apply comp_is_compatible. Qed.
+
+Corollary multistep_is_compatible : is_compatible multistep multistep'.
+Proof. apply clos_refl_trans_pres_comp. apply step_is_compatible. Qed.
+
+Proposition step_H_is_compatible : is_compatible step_H step_H'.
+Proof. apply comp_is_compatible. Qed.
+
+Corollary multistep_H_is_compatible :
+  is_compatible multistep_H multistep_H'.
+Proof. apply clos_refl_trans_pres_comp. apply step_H_is_compatible. Qed.
+
+Proposition step_H_inclusion :
+  (forall t t', step_H t t' -> step t t')
+  /\
+  (forall l l', step_H' l l' -> step' l l').
+Proof.
+  (* instead of giving hints to auto tactic *)
+  pose step_is_compatible as Hm. destruct Hm.
+  
+  apply mut_comp_ind ; intros ; auto.
+  - inversion b ; subst.
+    constructor. now right. 
+Qed.        
+  
+Proposition multistep_H_inclusion t t' :
+  multistep_H t t' -> multistep t t'.
+Proof.
+  intro .
+  induction H0.
+  - constructor.
+  - apply rt1n_trans with y ; try easy.
+    + now apply step_H_inclusion.
+Qed.
+  
 (* Typing Rules *)
 (* ------------ *)
 

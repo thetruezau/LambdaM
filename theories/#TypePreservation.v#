@@ -132,8 +132,8 @@ Corollary type_preservation' Γ t t' A :
 Proof.
   intros H1 H2.
   rewrite<- (proj1 inversion2) with t'.
-  apply π_is_admissible.
-  apply type_preservation_multistep with (t:=ι t).
-  - now apply ι_is_admissible.
+  apply π_type_pres.
+  apply type_preservation_multistep with (t:=i t).
+  - now apply i_type_pres.
   - now apply conservativeness1.
 Qed.
