@@ -6,7 +6,7 @@ Require Import Lambda Canonical CanonicalIsomorphism.
 
 Import ListNotations.
 
-(*   θ:   λc --> λ    *)
+(*   θ:   λ⃗ --> λ    *)
 (* ------------------ *)
 
 Fixpoint θ (t: Canonical.term) : Lambda.term :=
@@ -20,7 +20,7 @@ Fixpoint θ (t: Canonical.term) : Lambda.term :=
 Definition θ' (s: Lambda.term) (l: list Canonical.term) : Lambda.term := fold_left (fun s0 t0 => App s0 (θ t0)) l s.
 Hint Unfold θ' : core.
 
-(*   ψ:   λ --> λc    *)
+(*   ψ:   λ --> λ⃗    *)
 (* ------------------ *)
 
 Fixpoint ψ' (s: Lambda.term) (l: list Canonical.term) : Canonical.term :=
@@ -96,8 +96,7 @@ Proof.
     now rewrite H0.
 Qed.
 
-Lemma head_as_append (A: Type) (x:A) (xs: list A) :
-  [x]++xs = x::xs.
+Lemma head_as_append (A: Type) (x:A) (xs: list A) : [x]++xs = x::xs.
 Proof. easy. Qed.
 
 Corollary ψ_app_lemma : forall s u l, ψ' s (u :: l) = (ψ s)@(u, l).
@@ -149,7 +148,7 @@ Qed.
 (* Lemas para preservaçao de substituição *)
 (* -------------------------------------- *)
 
-Lemma up_subst_θ σ : up (σ >>> θ) = up σ >>> θ.
+Lemma θ_up_subst σ : up (σ >>> θ) = up σ >>> θ.
 Proof.
   f_ext. destruct x ; asimpl ; try easy.
   - now rewrite (proj1 θ_ren_pres).
@@ -161,7 +160,7 @@ Lemma θ_subst_pres :
   (forall l s σ, θ' s.[σ >>> θ] l..[σ] = (θ' s l).[σ >>> θ]).
 Proof.
   apply Canonical.mut_term_ind ; intros ; asimpl ; try easy.
-  - f_equal. now rewrite up_subst_θ.
+  - f_equal. now rewrite θ_up_subst.
   - fold (θ' (App (Var x) (θ u)) l).
     rewrite<- H0.
     rewrite (proj1 θ_app_lemma).
@@ -169,7 +168,7 @@ Proof.
   - fold (θ' (App (Lam (θ t.[up σ])) (θ u.[σ])) l..[σ]).
     fold (θ' (App (Lam (θ t)) (θ u)) l).
     rewrite H, H0.
-    rewrite<- up_subst_θ.
+    rewrite<- θ_up_subst.
     rewrite<- H1.
     now asimpl.
   - fold (θ' (App s.[σ >>> θ] (θ u.[σ])) l..[σ]).
@@ -179,7 +178,7 @@ Proof.
     now asimpl.
 Qed.
 
-Lemma up_subst_ψ σ : up (σ >>> ψ) = up σ >>> ψ.
+Lemma ψ_up_subst σ : up (σ >>> ψ) = up σ >>> ψ.
 Proof.
   f_ext. destruct x ; asimpl ; try easy.
   - now rewrite ψ_ren_pres with (l:=[]).
@@ -192,9 +191,9 @@ Proof.
   - destruct l as [| u l] ; asimpl ; try easy.
     + now rewrite ψ_app_lemma.      
   - destruct l as [| u l] ; asimpl ; try easy.
-    + rewrite up_subst_ψ.
+    + rewrite ψ_up_subst.
       now rewrite<- IHs.
-    + rewrite up_subst_ψ.      
+    + rewrite ψ_up_subst.      
       now rewrite<- IHs.   
   - asimpl. rewrite<- IHs1. asimpl. now rewrite<- IHs2.
 Qed.
@@ -202,7 +201,7 @@ Qed.
 (* As bijecções preservam a relação de um passo *)
 (* -------------------------------------------- *)
 
-Lemma θ'_step_pres : forall (l: list Canonical.term),
+Lemma θ'_step_pres l :
   forall s s', Lambda.step s s' -> Lambda.step (θ' s l) (θ' s' l).
 Proof.
   induction l as [| u l]; intros ; asimpl ; try easy.
@@ -240,7 +239,7 @@ Proof.
   autosubst.
 Qed.
 
-Lemma ψ'_step_pres :
+Theorem ψ'_step_pres :
   forall s s', Lambda.step s s' ->
           forall l, Canonical.step (ψ' s l) (ψ' s' l).
 Proof.
@@ -269,7 +268,7 @@ Proof. intros s s' H. now apply ψ'_step_pres. Qed.
 
 Require Import SimpleTypes.
 
-Theorem θ_admissable_rule :
+Theorem θ_is_admissible :
   forall Γ,
   (forall t A, Canonical.sequent Γ t A -> Lambda.sequent Γ (θ t) A)
   /\
@@ -287,7 +286,7 @@ Proof.
     apply Elim with A ; try easy.
 Qed.        
     
-Lemma ψ'_admissable_rule Γ s A :
+Lemma ψ'_is_admissible Γ s A :
   Lambda.sequent Γ s A ->
     forall l B, list_sequent Γ A l B -> Canonical.sequent Γ (ψ' s l) B.
 Proof.
@@ -297,9 +296,9 @@ Proof.
   - asimpl. eauto.
 Qed.  
   
-Theorem ψ_admissable_rule Γ s A :
+Theorem ψ_is_admissable Γ s A :
   Lambda.sequent Γ s A -> Canonical.sequent Γ (ψ s) A.
 Proof.
   intro H. induction H ; asimpl ; auto.
-  - eapply ψ'_admissable_rule ; eauto.
+  - eapply ψ'_is_admissible ; eauto.
 Qed.

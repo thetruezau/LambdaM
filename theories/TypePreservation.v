@@ -1,6 +1,7 @@
-Require Import List.
-Require Import SimpleTypes LambdaM.
+From Coq Require Import List.
+
 Require Import Autosubst.Autosubst.
+Require Import SimpleTypes LambdaM.
 
 Import ListNotations.
 
@@ -16,8 +17,9 @@ Lemma type_renaming :
               forall Δ ξ, Γ = (ξ >>> Δ) -> list_sequent Δ A l..[ren ξ] B).
 Proof.
   apply mut_sequent_ind ; intros ; subst ; econstructor ; eauto.
-  - assert (simple_rw : up (ren ξ) = ren (upren ξ)). { autosubst. }
-    rewrite simple_rw. apply H. autosubst.
+  - rewrite up_upren_internal.
+    + apply H. autosubst.
+    + autosubst.
 Qed.      
 
 Lemma type_substitution :
@@ -33,7 +35,7 @@ Proof.
   - apply H. destruct x ; asimpl.
     + now constructor. 
     + eapply type_renaming ; eauto.
-Qed.        
+Qed.
 
 (*   Lemmas for base steps   *)
 (* ------------------------- *)

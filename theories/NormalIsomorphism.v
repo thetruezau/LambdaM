@@ -35,4 +35,3 @@ Proof.
     fold (θ' (App s1 (θ (ψ s2))) l).
     now rewrite H0.
 Qed.
-

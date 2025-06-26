@@ -1,7 +1,7 @@
-Require Import List.
-Require Import Autosubst.Autosubst.
-Require Import Coq.Relations.Relation_Definitions.
+From Coq Require Import List.
+From Coq Require Import Relations.Relation_Definitions.
 
+Require Import Autosubst.Autosubst.
 Require Import LambdaM Canonical.
 
 

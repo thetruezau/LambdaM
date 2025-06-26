@@ -177,8 +177,8 @@ Qed.
 Lemma π_subst_rw u : (π u).:ids = (u.:ids)>>>π.
 Proof. autosubst. Qed.
 
-(* Isomorfismo ao nível dos tipos! *)
-(* ------------------------------- *)
+(* Isomorfismos admissiveis ao nivel das regras de tipificacao *)
+(* ----------------------------------------------------------- *)
 
 Require Import SimpleTypes.
 
