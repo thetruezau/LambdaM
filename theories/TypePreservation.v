@@ -15,10 +15,9 @@ Lemma type_renaming :
     (forall A l B, list_sequent Γ A l B ->
               forall Δ ξ, Γ = (ξ >>> Δ) -> list_sequent Δ A l..[ren ξ] B).
 Proof.
-  apply mut_sequent_ind ; 
-    intros ; subst ; econstructor ; eauto.
+  apply mut_sequent_ind ; intros ; subst ; econstructor ; eauto.
   - assert (simple_rw : up (ren ξ) = ren (upren ξ)). { autosubst. }
-    rewrite simple_rw. apply H. now autosubst.
+    rewrite simple_rw. apply H. autosubst.
 Qed.      
 
 Lemma type_substitution :
@@ -99,9 +98,8 @@ Theorem type_preservation :
   (forall l l', step' l l' -> forall Γ A B, list_sequent Γ A l B -> list_sequent Γ A l' B).
 Proof.
   apply mut_comp_ind ; intros ;
-    try (now inversion H ; econstructor ; eauto) ;
-    try (now inversion H0 ; econstructor ; eauto).
-  (* with this tactics we automatically solve trivial goals! *)
+    try (now ainv ; eauto).
+  (* with this tactic we automatically solve trivial goals! *)
   
   - inversion b.
     + inversion H0.

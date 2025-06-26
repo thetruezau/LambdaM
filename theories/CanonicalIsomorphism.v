@@ -1,8 +1,9 @@
-Require Import List.
-Require Import Autosubst.Autosubst.
-Require Import Coq.Relations.Relation_Definitions.
-Require Import Coq.Relations.Relation_Operators.
+From Coq Require Import List.
 
+From Coq Require Import Relations.Relation_Definitions.
+From Coq Require Import Relations.Relation_Operators.
+
+Require Import Autosubst.Autosubst.
 Require Import LambdaM Canonical IsCanonical SimpleTypes.
 
 Import ListNotations.

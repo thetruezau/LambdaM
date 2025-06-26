@@ -1,5 +1,6 @@
+From Coq Require Import Relations.Relation_Definitions.
+
 Require Import Autosubst.Autosubst.
-Require Import Coq.Relations.Relation_Definitions.
 
 (* The ordinary λ-calculus *)
 (* ----------------------- *)
