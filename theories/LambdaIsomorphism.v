@@ -296,7 +296,7 @@ Proof.
   - asimpl. eauto.
 Qed.  
   
-Theorem ψ_is_admissable Γ s A :
+Theorem ψ_is_admissible Γ s A :
   Lambda.sequent Γ s A -> Canonical.sequent Γ (ψ s) A.
 Proof.
   intro H. induction H ; asimpl ; auto.

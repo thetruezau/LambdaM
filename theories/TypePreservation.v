@@ -139,3 +139,21 @@ Proof.
   - now apply ι_is_admissible.
   - now apply conservativeness1.
 Qed.
+
+(*  And also for the STLC  *)
+(* ----------------------- *)
+
+Require Import Lambda LambdaIsomorphism.
+
+Corollary type_preservation'' Γ t t' A :
+  Lambda.sequent Γ t A ->
+  Lambda.step t t' ->
+  Lambda.sequent Γ t' A.
+Proof.
+  intros Hseq Hstep.
+  rewrite<- LambdaIsomorphism.inversion2 with t'.
+  apply θ_is_admissible.
+  apply type_preservation' with (t:=ψ t).
+  - now apply ψ_is_admissible.
+  - now apply ψ_step_pres.
+Qed.
