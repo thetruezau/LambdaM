@@ -80,7 +80,7 @@ Proof.
   induction H1 ; asimpl ; auto.
 Qed.
   
-Lemma h_is_admissible :
+Lemma H_is_admissible :
   forall t t', LambdaM.H t t' -> forall Γ A, sequent Γ t A -> sequent Γ t' A.
 Proof.
   intros.
@@ -107,7 +107,7 @@ Proof.
     + inversion H0.
       * eapply beta1_is_admissible ; eassumption.
       * eapply beta2_is_admissible ; eassumption.
-    + eapply h_is_admissible ; eassumption.
+    + eapply H_is_admissible ; eassumption.
 Qed.
 
 Corollary type_preservation_multistep Γ t t' A:
@@ -134,9 +134,9 @@ Corollary type_preservation' Γ t t' A :
 Proof.
   intros H1 H2.
   rewrite<- (proj1 inversion2) with t'.
-  apply π_is_admissible.
-  apply type_preservation_multistep with (t:=ι t).
-  - now apply ι_is_admissible.
+  apply p_is_admissible.
+  apply type_preservation_multistep with (t:=i t).
+  - now apply i_is_admissible.
   - now apply conservativeness1.
 Qed.
 

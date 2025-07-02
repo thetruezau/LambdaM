@@ -10,9 +10,11 @@ Require Import IsCanonical CanonicalIsomorphism.
 Import ListNotations.
 
 Lemma conservativeness1 :
-  (forall (t t': Canonical.term), Canonical.step t t' -> LambdaM.multistep (ι t) (ι t'))
+  (forall (t t': Canonical.term), Canonical.step t t' ->
+                              LambdaM.multistep (i t) (i t'))
   /\
-  (forall l l', Canonical.step' l l' -> LambdaM.multistep' (map ι l) (map ι l')).
+  (forall l l', Canonical.step' l l' ->
+            LambdaM.multistep' (map i l) (map i l')).
 Proof.
   pose LambdaM.multistep_is_compatible as H. destruct H.
 
@@ -22,31 +24,39 @@ Proof.
 
     (* reproduzir Beta1 em λm *)
     + inversion Beta1 ; subst. asimpl.
-      apply rt1n_trans with (ι t0).[(ι u)/].
+      apply rt1n_trans with (i t0).[(i u)/].
       * unfold LambdaM.step. constructor. left. left.
         now constructor. 
-      * apply multistep_H_inclusion.
-        rewrite ι_subst_rw. apply ι_subst_pres.
-
+      * rewrite (proj1 i_subst_pres).
+        rewrite i_subst_rw.
+        apply multistep_H_inclusion.        
+        apply h_is_multistep_H.
+        
     (* reproduzir Beta2 em λm *)
     + inversion Beta2 ; subst. asimpl.
-      apply rt1n_trans with (mApp ((ι t0).[(ι u)/]) (ι v) (map ι l)).
+      apply rt1n_trans
+        with (mApp ((i t0).[(i u)/]) (i v) (map i l)).
       * constructor. left. right. now constructor. 
 
-      * apply multistep_trans with (mApp (ι t0.[u/]) (ι v) (map ι l)).
+      * apply multistep_trans
+          with (mApp (i t0.[u/]) (i v) (map i l)).
         ** apply comp_mApp1.
-           apply multistep_H_inclusion.
-           rewrite ι_subst_rw. apply ι_subst_pres.
+           rewrite (proj1 i_subst_pres).
+           rewrite i_subst_rw.
+           apply multistep_H_inclusion.        
+           apply h_is_multistep_H.
 
-        ** rewrite ι_app_pres. 
+        ** rewrite i_app_comm. 
            apply multistep_H_inclusion.
-           apply app_is_multistep_H.
+           apply capp_is_multistep_H.
 Qed.
 
 Lemma conservativeness2 :
-  (forall (t t': LambdaM.term), LambdaM.step t t' -> Canonical.multistep (π t) (π t'))
+  (forall (t t': LambdaM.term), LambdaM.step t t' ->
+                            Canonical.multistep (p t) (p t'))
   /\
-  (forall (l l': list LambdaM.term), LambdaM.step' l l' -> Canonical.multistep' (map π l) (map π l')).
+  (forall (l l': list LambdaM.term), LambdaM.step' l l' ->
+                                 Canonical.multistep' (map p l) (map p l')).
 Proof.
   pose Canonical.multistep_is_compatible as H. destruct H.
 
@@ -60,21 +70,21 @@ Proof.
     (* h preserva passos Beta *)
     + inversion Beta as [Beta1 | Beta2].
       * inversion Beta1 ; subst ; asimpl.
-        apply rt1n_trans with ((π t0).[π u/]).
+        apply rt1n_trans with ((p t0).[p u/]).
         ** constructor. left. now constructor. 
-        ** rewrite (proj1 π_subst_pres).
-           rewrite π_subst_rw. constructor.
+        ** rewrite (proj1 p_subst_pres).
+           rewrite p_subst_rw. constructor.
       * inversion Beta2 ; subst ; asimpl.
-        apply rt1n_trans with ((π t0).[π u/]@(π v, map π l)).
+        apply rt1n_trans with ((p t0).[p u/]@(p v, map p l)).
         ** constructor. right. now constructor. 
         ** apply multistep_comp_app1.
-           rewrite (proj1 π_subst_pres).
-           rewrite π_subst_rw. constructor.
+           rewrite (proj1 p_subst_pres).
+           rewrite p_subst_rw. constructor.
 
     (* h colapsa passos H *)
     + inversion H ; subst ; asimpl.
       (* aqui talvez fosse importante um lema! *)
-      destruct (π t0) ; asimpl ;
+      destruct (p t0) ; asimpl ;
         rewrite map_app ; try constructor.
       * rewrite<- app_assoc. asimpl. constructor.
       * rewrite<- app_assoc. asimpl. constructor.
@@ -84,19 +94,20 @@ Qed.
 (* --------------------------- *)
 
 Theorem conservativeness :
-  forall t t', Canonical.multistep t t' <-> LambdaM.multistep (ι t) (ι t').
+  forall t t', Canonical.multistep t t' <->
+           LambdaM.multistep (i t) (i t').
 Proof.
   split.
   - intro H.
     induction H as [| t1 t2 t3].
     + constructor.
-    + apply multistep_trans with (ι t2) ; try easy.
+    + apply multistep_trans with (i t2) ; try easy.
       * now apply conservativeness1. 
   - intro H.
     rewrite<- (proj1 inversion2) with t.
     rewrite<- (proj1 inversion2) with t'.
     induction H as [| t1 t2 t3].
     + constructor.
-    + apply multistep_trans with (π t2) ; try easy.
+    + apply multistep_trans with (p t2) ; try easy.
       * now apply conservativeness2. 
 Qed.
