@@ -1,9 +1,8 @@
 From Coq Require Import List.
 From Coq Require Import Relations.Relation_Definitions.
 
-Require Import Autosubst.Autosubst.
+From Autosubst Require Import Autosubst.
 Require Import LambdaM Canonical.
-
 
 Lemma mmap_append {A: Type} (f: A -> A) (l1 l2: list A) :
   mmap f (l1 ++ l2) = (mmap f l1) ++ (mmap f l2).

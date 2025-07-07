@@ -1,10 +1,9 @@
-From Coq Require Import List.
-
 From Coq Require Import Relations.Relation_Definitions.
 From Coq Require Import Relations.Relation_Operators.
 
-Require Import Autosubst.Autosubst.
+From Autosubst Require Import Autosubst.
 
+From Coq Require Import List.
 Import ListNotations.
 
 (* ---------------- *)

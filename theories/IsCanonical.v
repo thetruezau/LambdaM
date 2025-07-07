@@ -154,7 +154,21 @@ Inductive canonical_relation (R: relation term): relation term :=
                       canonical_relation R (h t) (h t').
 
 Inductive canonical_list_relation (R: relation (list term)): relation (list term) :=
-| Step_CanList l l' : R l l' -> canonical_list_relation R (map h l) (map h l').
+| Step_CanList l l' : R l l' ->
+                      canonical_list_relation R (map h l) (map h l').
 
 Definition step_can := canonical_relation step_β.
 Definition step_can' := canonical_list_relation step_β'.
+
+(* typing system over the canonical system *)
+(* --------------------------------------- *)
+
+Require Import SimpleTypes.
+
+Inductive canonical_sequent (Γ: var->type) : term -> type -> Prop :=
+| Seq_CanTerm t A : sequent Γ t A -> canonical_sequent Γ (h t) A.
+
+Inductive canonical_list_sequent (Γ: var->type) :
+  type -> list term -> type -> Prop :=
+| Seq_CanList l A B : list_sequent Γ A l B ->
+                      canonical_list_sequent Γ A (map h l) B.

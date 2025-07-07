@@ -1,8 +1,8 @@
-From Coq Require Import List.
-
-Require Import Autosubst.Autosubst.
 Require Import SimpleTypes LambdaM.
 
+From Autosubst Require Import Autosubst.
+
+From Coq Require Import List.
 Import ListNotations.
 
 (* Subst and Ren Lemmas *)
@@ -125,7 +125,8 @@ Qed.
 (*       for the canonical subsystem       *)
 (* --------------------------------------- *)
 
-Require Import Canonical CanonicalIsomorphism Conservativeness.
+Require Import Canonical CanonicalIsomorphism IsCanonical.
+Require Import Conservativeness.
 
 Corollary type_preservation' Γ t t' A :
   Canonical.sequent Γ t A ->
@@ -135,8 +136,14 @@ Proof.
   intros H1 H2.
   rewrite<- (proj1 inversion2) with t'.
   apply p_is_admissible.
+  specialize (proj1 i_is_canonical) with t'. intro it'.
+  apply h_is_surjective in it'. rewrite it'. constructor.
   apply type_preservation_multistep with (t:=i t).
-  - now apply i_is_admissible.
+  - apply i_is_admissible in H1. inversion H1.
+    apply type_preservation_multistep with (t:=t0).
+    + assumption.
+    + apply multistep_H_inclusion.
+      apply h_is_multistep_H.
   - now apply conservativeness1.
 Qed.
 

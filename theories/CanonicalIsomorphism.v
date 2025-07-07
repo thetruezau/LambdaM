@@ -170,7 +170,7 @@ Proof.
     replace (Lam (h t0)) with (h (Lam t0)) ; try easy.
     replace (Lam (h t'0)) with (h (Lam t'0)) ; try easy.
     constructor. now constructor.
-  - (* Caso x(u, l) -> x(u', l)*)
+  - (* Caso x(u, l) -> x(u', l) *)
     specialize (proj2 i_is_canonical) with l. intro il.
     apply h_is_surjective in il. rewrite il.
     replace (mApp (Var x) (h t) (map h (map i l)))
@@ -178,7 +178,7 @@ Proof.
     replace (mApp (Var x) (h t') (map h (map i l)))
       with (h (mApp (Var x) t' (map i l))) ; try easy.
     constructor. now constructor.
-  - (* Caso x(u, l) -> x(u, l')*)
+  - (* Caso x(u, l) -> x(u, l') *)
     specialize (proj1 i_is_canonical) with u. intro iu.
     apply h_is_surjective in iu. rewrite iu.
     replace (mApp (Var x) (h (i u)) (map h l0))
@@ -243,6 +243,7 @@ Theorem i_step_pres :
       step_can' (map i l) (map i l')).
 Proof.
   pose step_can_is_compatible as Hic. destruct Hic.
+  
   apply Canonical.mut_comp_ind ; intros ; auto.
   - inversion b.
     + (* Caso Beta1 *)
@@ -305,7 +306,7 @@ Proof.
   induction H1 ; asimpl ; auto.
 Qed.  
 
-Lemma app_is_admissible Γ t u l A B C :
+Lemma capp_is_admissible Γ t u l A B C :
   Canonical.sequent Γ t (Arr A B) ->
   Canonical.sequent Γ u A ->
   Canonical.list_sequent Γ B l C ->
@@ -318,23 +319,39 @@ Proof.
   - eapply append_is_admissible ; eauto.
 Qed.
 
-Lemma p_is_admissible :
-  forall Γ,
-    (forall t A, LambdaM.sequent Γ t A -> Canonical.sequent Γ (p t) A)
-    /\
-    (forall A l B, LambdaM.list_sequent Γ A l B -> Canonical.list_sequent Γ A (map p l) B).
+Lemma p_is_admissible Γ t A :
+  canonical_sequent Γ t A -> Canonical.sequent Γ (p t) A.
 Proof.
-  apply LambdaM.mut_sequent_ind ;
-    intros ; asimpl ; auto.
-  - eapply app_is_admissible ; eauto.
+  intro Hs. induction Hs.
+  rewrite<- (proj1 inversion1) with t.
+  rewrite (proj1 inversion2).  
+
+  induction H using LambdaM.sim_sequent_ind
+    with (P0 := fun Γ A l B (_: LambdaM.list_sequent Γ A l B) =>
+                  Canonical.list_sequent Γ A (map p l) B) ;
+    asimpl ; auto.
+  - eapply capp_is_admissible ; eauto.
 Qed.  
 
 Lemma i_is_admissible :
   forall Γ,
-    (forall t A, Canonical.sequent Γ t A -> LambdaM.sequent Γ (i t) A)
+    (forall t A, Canonical.sequent Γ t A -> canonical_sequent Γ (i t) A)
     /\
-    (forall A l B, Canonical.list_sequent Γ A l B -> LambdaM.list_sequent Γ A (map i l) B).
+    (forall A l B, Canonical.list_sequent Γ A l B -> canonical_list_sequent Γ A (map i l) B).
 Proof.
   apply Canonical.mut_sequent_ind ;
-    intros ; asimpl ; try econstructor ; eauto.
+    intros ; asimpl ; ainv.
+  - replace (Var x) with (h (Var x)) ; try easy.
+    constructor. now constructor.
+  - replace (Lam (h t0)) with (h (Lam t0)) ; try easy.
+    constructor. now constructor.
+  - replace (mApp (Var x) (h t) (map h l1))
+      with (h (mApp (Var x) t l1)) ; try easy.
+    constructor. econstructor ; eauto.
+  - replace (mApp (Lam (h t0)) (h t1) (map h l1))
+      with (h (mApp (Lam t0) t1 l1)) ; try easy.
+    constructor. econstructor ; eauto.
+  - replace [] with (map h []) ; try easy.
+  - replace ((h t)::(map h l1)) with (map h (t::l1)) ; try easy.
+    constructor. now constructor.
 Qed.  

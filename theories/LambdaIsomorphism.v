@@ -1,9 +1,10 @@
-From Coq Require Import List.
 From Coq Require Import Relations.Relation_Definitions.
 
-Require Import Autosubst.Autosubst.
+From Autosubst Require Import Autosubst.
+
 Require Import Lambda Canonical CanonicalIsomorphism.
 
+From Coq Require Import List.
 Import ListNotations.
 
 (*   θ:   λ⃗ --> λ    *)

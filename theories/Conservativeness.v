@@ -1,20 +1,18 @@
-From Coq Require Import List.
 From Coq Require Import Relations.Relation_Definitions.
 From Coq Require Import Relations.Relation_Operators.
 Require Import MyRelations.
 
-Require Import Autosubst.Autosubst.
+From Autosubst Require Import Autosubst.
 Require Import LambdaM Canonical.
 Require Import IsCanonical CanonicalIsomorphism.
 
+From Coq Require Import List.
 Import ListNotations.
 
 Lemma conservativeness1 :
-  (forall (t t': Canonical.term), Canonical.step t t' ->
-                              LambdaM.multistep (i t) (i t'))
+  (forall (t t': Canonical.term), Canonical.step t t' -> LambdaM.multistep (i t) (i t'))
   /\
-  (forall l l', Canonical.step' l l' ->
-            LambdaM.multistep' (map i l) (map i l')).
+  (forall l l', Canonical.step' l l' -> LambdaM.multistep' (map i l) (map i l')).
 Proof.
   pose LambdaM.multistep_is_compatible as H. destruct H.
 
@@ -52,11 +50,9 @@ Proof.
 Qed.
 
 Lemma conservativeness2 :
-  (forall (t t': LambdaM.term), LambdaM.step t t' ->
-                            Canonical.multistep (p t) (p t'))
+  (forall (t t': LambdaM.term), LambdaM.step t t' -> Canonical.multistep (p t) (p t'))
   /\
-  (forall (l l': list LambdaM.term), LambdaM.step' l l' ->
-                                 Canonical.multistep' (map p l) (map p l')).
+  (forall (l l': list LambdaM.term), LambdaM.step' l l' -> Canonical.multistep' (map p l) (map p l')).
 Proof.
   pose Canonical.multistep_is_compatible as H. destruct H.
 
