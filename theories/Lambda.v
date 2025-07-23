@@ -34,13 +34,13 @@ Inductive step : relation term :=
 (* λ-terms in β normal form *) 
 (* ------------------------ *) 
 
-Inductive normal: Lambda.term -> Prop :=
+Inductive normal: term -> Prop :=
 | nLam s : normal s -> normal (Lam s)
 | nApps s : apps s -> normal s
   
-with apps: Lambda.term -> Prop :=
+with apps: term -> Prop :=
 | nVar x : apps (Var x)
-| nApp s1 s2 : apps s1 -> normal s2 -> apps (App s1 s2).
+| nApp s t : apps s -> normal t -> apps (App s t).
 
 Scheme sim_normal_ind := Induction for normal Sort Prop
   with sim_apps_ind := Induction for apps Sort Prop.  

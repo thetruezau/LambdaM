@@ -1,10 +1,8 @@
-From Coq Require Import Relations.Relation_Definitions.
-
 From Autosubst Require Import Autosubst.
 
 Require Import Lambda Canonical LambdaIsomorphism.
 
-From Coq Require Import List.
+From Coq Require Import List Relations.Relation_Definitions.
 Import ListNotations.
 
 Theorem inversion1 :
@@ -31,8 +29,8 @@ Proof.
   - asimpl. now f_equal.
   - now apply H with (l:=[]).
   - destruct l ; now asimpl.
-  - asimpl. fold (ψ s2).
+  - asimpl. fold (ψ t).
     rewrite H. asimpl.
-    fold (θ' (App s1 (θ (ψ s2))) l).
+    fold (θ' (App s (θ (ψ t))) l).
     now rewrite H0.
 Qed.

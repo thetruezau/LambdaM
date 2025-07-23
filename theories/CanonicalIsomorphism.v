@@ -306,7 +306,7 @@ Proof.
   induction H1 ; asimpl ; auto.
 Qed.  
 
-Lemma capp_is_admissible Γ t u l A B C :
+Lemma app_is_admissible Γ t u l A B C :
   Canonical.sequent Γ t (Arr A B) ->
   Canonical.sequent Γ u A ->
   Canonical.list_sequent Γ B l C ->
@@ -330,7 +330,7 @@ Proof.
     with (P0 := fun Γ A l B (_: LambdaM.list_sequent Γ A l B) =>
                   Canonical.list_sequent Γ A (map p l) B) ;
     asimpl ; auto.
-  - eapply capp_is_admissible ; eauto.
+  - eapply app_is_admissible ; eauto.
 Qed.  
 
 Lemma i_is_admissible :

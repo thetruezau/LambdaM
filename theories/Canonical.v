@@ -289,7 +289,7 @@ Section CompatibilityLemmas.
   Proof.
     intros l1 l1' H.
     induction H ; intros.
-    - repeat rewrite<- app_comm_cons.
+    - repeat rewrite<- app_comm_cons. 
       now constructor. 
     - repeat rewrite<- app_comm_cons.
       constructor. now apply IHcomp'.

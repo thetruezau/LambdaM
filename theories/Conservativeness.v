@@ -23,8 +23,7 @@ Proof.
     (* reproduzir Beta1 em λm *)
     + inversion Beta1 ; subst. asimpl.
       apply rt1n_trans with (i t0).[(i u)/].
-      * unfold LambdaM.step. constructor. left. left.
-        now constructor. 
+      * unfold LambdaM.step. constructor. left. now left.
       * rewrite (proj1 i_subst_pres).
         rewrite i_subst_rw.
         apply multistep_H_inclusion.        
@@ -34,8 +33,7 @@ Proof.
     + inversion Beta2 ; subst. asimpl.
       apply rt1n_trans
         with (mApp ((i t0).[(i u)/]) (i v) (map i l)).
-      * constructor. left. right. now constructor. 
-
+      * constructor. left. now right. 
       * apply multistep_trans
           with (mApp (i t0.[u/]) (i v) (map i l)).
         ** apply comp_mApp1.
@@ -43,7 +41,6 @@ Proof.
            rewrite i_subst_rw.
            apply multistep_H_inclusion.        
            apply h_is_multistep_H.
-
         ** rewrite i_app_comm. 
            apply multistep_H_inclusion.
            apply capp_is_multistep_H.
