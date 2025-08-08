@@ -91,7 +91,7 @@ Proof.
   - apply capp_is_canonical ; auto.
 Qed.
 
-Theorem h_is_surjective :
+Theorem h_fixpoints :
   (forall t, is_canonical t -> t = h t)
   /\
   (forall l, is_canonical_list l -> l = map h l).
@@ -109,7 +109,7 @@ Lemma capp_h_comm t u l :
   capp (h t) u l = h (mApp t u l).
 Proof.
   destruct t ; intros ; asimpl ; f_equal ;
-    now apply h_is_surjective.
+    now apply h_fixpoints.
 Qed.
 
 Lemma capp_is_multistep_H t u l :

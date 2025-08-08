@@ -2,7 +2,7 @@ From Coq Require Import Relations.Relation_Definitions.
 
 From Autosubst Require Import Autosubst.
 
-Require Import Lambda Canonical CanonicalIsomorphism.
+Require Import Lambda Canonical.
 
 From Coq Require Import List.
 Import ListNotations.

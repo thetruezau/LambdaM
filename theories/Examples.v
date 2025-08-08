@@ -14,35 +14,6 @@ Qed.
 
 (* --- *)
 
-Section Lambda.
-  Require Import Lambda.
-  
-  Theorem nfs_are_irreducible :
-    (forall s, normal s -> ~exists t, step s t)
-    /\
-    (forall s, apps s -> ~exists t, step s t).
-  Proof.
-    apply mut_normal_ind ; intros.
-    - intro.
-      apply H.
-      destruct H0 as [t Ht].
-      inversion Ht.
-      now exists s'.
-    - intro.
-      apply H.
-      destruct H0 as [t Ht].
-      now exists t.
-    - intro.
-      now destruct H.
-    - intro.
-      destruct H1 as [t0 Ht0].
-      inversion Ht0 ; subst.
-      + inversion a.
-      + apply H. now exists s'.
-      + apply H0. now exists t'.
-  Qed.
-End Lambda.
-
 Section LambdaM.
   Require Import LambdaM.
   

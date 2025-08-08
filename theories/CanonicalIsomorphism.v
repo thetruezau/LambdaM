@@ -11,6 +11,7 @@ From Coq Require Import List.
 Import ListNotations.
 
 (* Injecção de λ⃗ em λm *)
+(* -------------------- *)
 
 Fixpoint i (t: Canonical.term) : LambdaM.term :=
   match t with
@@ -21,6 +22,7 @@ Fixpoint i (t: Canonical.term) : LambdaM.term :=
   end.
 
 (* Projecção de λm em λ⃗ *)
+(* --------------------- *)
 
 Fixpoint p (t: LambdaM.term) : Canonical.term :=
   match t with
@@ -67,10 +69,10 @@ Corollary inversion1' :
 Proof.
   split.
   - intros t it.
-    rewrite (proj1 h_is_surjective) ; try easy.
+    rewrite (proj1 h_fixpoints) ; try easy.
     apply inversion1.
   - intros l il.
-    rewrite (proj2 h_is_surjective) ; try easy.
+    rewrite (proj2 h_fixpoints) ; try easy.
     apply inversion1.
 Qed.
 
@@ -112,10 +114,10 @@ Theorem i_subst_pres :
   (forall l σ, map i l..[σ] = map h (map i l)..[σ >>> i]).
 Proof.
   apply Canonical.mut_term_ind ; intros ; asimpl ; try easy.
-  - apply h_is_surjective. apply i_is_canonical.
+  - apply h_fixpoints. apply i_is_canonical.
   - rewrite i_up_subst. now f_equal.
   - rewrite i_app_comm. f_equal ; try easy.
-    + apply h_is_surjective. apply i_is_canonical.
+    + apply h_fixpoints. apply i_is_canonical.
   - rewrite i_up_subst. now repeat f_equal.
   - now f_equal.  
 Qed.
@@ -172,7 +174,7 @@ Proof.
     constructor. now constructor.
   - (* Caso x(u, l) -> x(u', l) *)
     specialize (proj2 i_is_canonical) with l. intro il.
-    apply h_is_surjective in il. rewrite il.
+    apply h_fixpoints in il. rewrite il.
     replace (mApp (Var x) (h t) (map h (map i l)))
       with (h (mApp (Var x) t (map i l))) ; try easy.
     replace (mApp (Var x) (h t') (map h (map i l)))
@@ -180,7 +182,7 @@ Proof.
     constructor. now constructor.
   - (* Caso x(u, l) -> x(u, l') *)
     specialize (proj1 i_is_canonical) with u. intro iu.
-    apply h_is_surjective in iu. rewrite iu.
+    apply h_fixpoints in iu. rewrite iu.
     replace (mApp (Var x) (h (i u)) (map h l0))
       with (h (mApp (Var x) (i u) l0)) ; try easy.
     replace (mApp (Var x) (h (i u)) (map h l'0))
@@ -188,9 +190,9 @@ Proof.
     constructor. now constructor.
   - (* Caso (λ.t)(u, l) -> (λ.t')(u, l') *)
     specialize (proj1 i_is_canonical) with u. intro iu.
-    apply h_is_surjective in iu. rewrite iu.
+    apply h_fixpoints in iu. rewrite iu.
     specialize (proj2 i_is_canonical) with l. intro il.
-    apply h_is_surjective in il. rewrite il.    
+    apply h_fixpoints in il. rewrite il.    
     replace (mApp (Lam (h t0)) (h (i u)) (map h (map i l)))
       with (h (mApp (Lam t0) (i u) (map i l))) ; try easy.
     replace (mApp (Lam (h t'0)) (h (i u)) (map h (map i l)))
@@ -199,9 +201,9 @@ Proof.
     constructor. constructor. now constructor.
   - (* Caso (λ.t)(u, l) -> (λ.t)(u', l') *)
     specialize (proj1 i_is_canonical) with t. intro it.
-    apply h_is_surjective in it. rewrite it.
+    apply h_fixpoints in it. rewrite it.
     specialize (proj2 i_is_canonical) with l. intro il.
-    apply h_is_surjective in il. rewrite il.    
+    apply h_fixpoints in il. rewrite il.    
     replace (mApp (Lam (h (i t))) (h t0) (map h (map i l)))
       with (h (mApp (Lam (i t)) t0 (map i l))) ; try easy.
     replace (mApp (Lam (h (i t))) (h t') (map h (map i l)))
@@ -209,9 +211,9 @@ Proof.
     constructor. now constructor.
   - (* Caso (λ.t)(u, l) -> (λ.t')(u, l') *)
     specialize (proj1 i_is_canonical) with t. intro it.
-    apply h_is_surjective in it. rewrite it.
+    apply h_fixpoints in it. rewrite it.
     specialize (proj1 i_is_canonical) with u. intro iu.
-    apply h_is_surjective in iu. rewrite iu.
+    apply h_fixpoints in iu. rewrite iu.
     replace (mApp (Lam (h (i t))) (h (i u)) (map h l0))
       with (h (mApp (Lam (i t)) (i u) l0)) ; try easy.
     replace (mApp (Lam (h (i t))) (h (i u)) (map h l'0))
@@ -219,14 +221,14 @@ Proof.
     (* here we use two compatibilty steps from system λm *)
     constructor. now constructor.
   - specialize (proj2 i_is_canonical) with l. intro il.
-    apply h_is_surjective in il. rewrite il.    
+    apply h_fixpoints in il. rewrite il.    
     replace (h t :: map h (map i l))
       with (map h (t :: map i l)) ; try easy.
     replace (h t' :: map h (map i l))
       with (map h (t' :: map i l)) ; try easy.
     constructor. now constructor.
   - specialize (proj1 i_is_canonical) with u. intro iu.
-    apply h_is_surjective in iu. rewrite iu.    
+    apply h_fixpoints in iu. rewrite iu.    
     replace (h (i u) :: map h l0)
       with (map h ((i u) :: l0)) ; try easy.
     replace (h (i u) :: map h l'0)
@@ -249,14 +251,14 @@ Proof.
     + (* Caso Beta1 *)
       inversion H. subst. 
       specialize (proj1 i_is_canonical) with (LambApp t0 u []).
-      intro ic1. apply h_is_surjective in ic1. rewrite ic1.
+      intro ic1. apply h_fixpoints in ic1. rewrite ic1.
       rewrite (proj1 i_subst_pres).
       constructor. asimpl. 
       constructor. left. now constructor. 
     + (* Caso Beta2 *)
       inversion H. subst.
       specialize (proj1 i_is_canonical) with (LambApp t0 u (v::l)).
-      intro ic1. apply h_is_surjective in ic1. rewrite ic1.
+      intro ic1. apply h_fixpoints in ic1. rewrite ic1.
       rewrite i_app_comm.
       rewrite (proj1 i_subst_pres).
       rewrite capp_h_comm ; try apply i_is_canonical.

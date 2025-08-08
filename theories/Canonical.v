@@ -82,7 +82,7 @@ Notation "t '@(' u ',' l ')'" := (app t u l) (at level 9).
 
 Instance Ids_term : Ids term. derive. Defined.
 Instance Rename_term : Rename term. derive. Defined.
-Instance Subst_term : Subst term. 
+Instance Subst_term : Subst term.
 Proof.
   unfold Subst. fix inst 2. change _ with (Subst term) in inst.
   intros σ s. change (annot term s). destruct s.

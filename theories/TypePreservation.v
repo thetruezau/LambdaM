@@ -134,7 +134,7 @@ Corollary type_preservation' Γ t t' A :
   Canonical.sequent Γ t' A.
 Proof.
   specialize (proj1 i_is_canonical) with t'. intro it'.
-  apply h_is_surjective in it'.
+  apply h_fixpoints in it'.
 
   intros H1 H2.
   rewrite<- (proj1 inversion2) with t'.
