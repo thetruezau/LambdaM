@@ -77,15 +77,15 @@ Proof.
     apply Step_Abs in H1.
     now exists (Lam x).
   - constructor. constructor.
-    + assert (Hs1 : irreducible s1).
-      { intro. apply H.
+    + cut (irreducible s1).
+      * intro is1.
+        apply IHs1 in is1. inversion is1.
+        ** cut False ; [contradiction |]. subst. apply H.
+           exists (s.[s2/]). now constructor.
+        ** assumption.
+      * intro. apply H.
         inversion H0.
-        eapply Step_App1 in H1. eauto. }
-      apply IHs1 in Hs1. inversion Hs1.
-      * cut False ; [contradiction |].
-        subst. apply H.
-        exists (s.[s2/]). now constructor.
-      * assumption.
+        eapply Step_App1 in H1. eauto.
     + apply IHs2. intro. apply H.
       inversion H0.
       apply Step_App2 with (s:=s1) in H1. 

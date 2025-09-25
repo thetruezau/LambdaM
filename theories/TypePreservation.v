@@ -19,7 +19,7 @@ Proof.
   apply mut_sequent_ind ; intros ; subst ; econstructor ; eauto.
   - rewrite up_upren_internal.
     + apply H. autosubst.
-    + autosubst.
+    + intros xi x. now asimpl. 
 Qed.      
 
 Lemma type_substitution :

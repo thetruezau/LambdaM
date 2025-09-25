@@ -8,8 +8,8 @@ Require Import LambdaM.
 From Coq Require Import List.
 Import ListNotations.
 
-(* ------------------------------- *)
-(* predicado para termos canónicos *)
+(* Predicate that defines the canonical terms *)
+(* ------------------------------------------ *)
 
 Inductive is_canonical: term -> Prop :=
 | cVar (x: var) :
@@ -40,8 +40,9 @@ Scheme sim_is_canonical_ind := Induction for is_canonical Sort Prop
 
 Combined Scheme mut_is_canonical_ind from sim_is_canonical_ind, sim_is_canonical_list_ind.
 
-(* definition of h maximal reduction in in λm *)
-(* ------------------------------------------ *)
+(* Definition of map h,
+   that collapses λm terms to canonical ones *)
+(* ----------------------------------------- *)
 
 Definition capp (v u: term) (l: list term) : term :=
   match v with
@@ -57,8 +58,8 @@ Fixpoint h (t: term) :=
   | mApp t u l => capp (h t) (h u) (map h l)
   end.
 
-(* lets prove that the image of h is canonical *)
-(* ------------------------------------------- *)
+(* Proving that the image of h is canonical *)
+(* ---------------------------------------- *)
 
 Lemma list_append_is_canonical l1 l2:
   is_canonical_list l1 -> is_canonical_list l2 ->
@@ -82,7 +83,7 @@ Proof.
       * apply list_append_is_canonical ; auto.
 Qed.
 
-Theorem h_is_canonical :
+Proposition h_is_canonical :
   (forall t, is_canonical (h t))
   /\
   (forall l, is_canonical_list (map h l)).
@@ -91,7 +92,7 @@ Proof.
   - apply capp_is_canonical ; auto.
 Qed.
 
-Theorem h_fixpoints :
+Proposition h_fixpoints :
   (forall t, is_canonical t -> t = h t)
   /\
   (forall l, is_canonical_list l -> l = map h l).
@@ -100,7 +101,7 @@ Proof.
     intros ; asimpl ; repeat f_equal ; auto.
 Qed.  
 
-(* useful lemmas relating to map h *)
+(* Useful lemmas relating to map h *)
 (* ------------------------------- *)
 
 Lemma capp_h_comm t u l :
@@ -146,8 +147,8 @@ Proof.
       * apply rt1n_refl.
 Qed.
 
-(* one step reduction in the canonical subsystem *)
-(* --------------------------------------------- *)
+(* Reduction relation for the canonical subsystem *)
+(* ---------------------------------------------- *)
   
 Inductive canonical_relation (R: relation term): relation term :=
 | Step_CanTerm t t' : R t t' ->
@@ -160,8 +161,8 @@ Inductive canonical_list_relation (R: relation (list term)): relation (list term
 Definition step_can := canonical_relation step_β.
 Definition step_can' := canonical_list_relation step_β'.
 
-(* typing system over the canonical system *)
-(* --------------------------------------- *)
+(* Typing system for the canonical subsystem *)
+(* -------------------------------------- *)
 
 Require Import SimpleTypes.
 

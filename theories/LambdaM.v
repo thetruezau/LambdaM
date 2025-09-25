@@ -6,8 +6,8 @@ From Autosubst Require Import Autosubst.
 From Coq Require Import List.
 Import ListNotations.
 
-(* Sintaxe *)
-(* ------- *)
+(* Syntax for λm-expressions *)
+(* ------------------------- *)
 
 Inductive term: Type :=
 | Var (x: var)
@@ -54,16 +54,16 @@ End dedicated_induction_principle.
 
 Combined Scheme mut_term_ind from sim_term_ind, sim_list_ind.
 
-(* Substituição *)
-(* ------------ *)
+(* The Autosubst classes (automatically instantiated) *)
+(* -------------------------------------------------- *)
 
 Instance Ids_term : Ids term. derive. Defined.
 Instance Rename_term : Rename term. derive. Defined.
 Instance Subst_term : Subst term. derive. Defined.
 Instance SubstLemmas_term : SubstLemmas term. derive. Defined.
 
-(* Definição de compatibilidade em λm *)
-(* ---------------------------------- *)
+(* Notions of compatibilty for λm-expressions *)
+(* ------------------------------------------ *)
 
 Section Compatibilty.
 
@@ -108,12 +108,12 @@ Section IsCompatible.
   
 End IsCompatible.
 
-Theorem comp_is_compatible B : is_compatible (comp B) (comp' B).
+Proposition comp_is_compatible B : is_compatible (comp B) (comp' B).
 Proof.
   split ; autounfold ; intros ; constructor ; assumption.
 Qed.
 
-Theorem clos_refl_trans_pres_comp :
+Proposition clos_refl_trans_pres_comp :
   forall R R', is_compatible R R' ->
           is_compatible (clos_refl_trans_1n _ R) (clos_refl_trans_1n _ R').
 Proof.
@@ -122,8 +122,8 @@ Proof.
   split ; intros ; induction H ; econstructor ; eauto.
 Qed.
   
-(* Redução em λm *)
-(* ------------- *)
+(* Reduction rules in λm *)
+(* --------------------- *)
 
 Inductive β1: relation term :=
 | Step_Beta1 (t: {bind term}) (t' u: term) :
@@ -193,7 +193,7 @@ Proof.
     + now apply step_H_inclusion.
 Qed.
   
-(* Typing Rules *)
+(* Typing rules *)
 (* ------------ *)
 
 Require Import SimpleTypes.

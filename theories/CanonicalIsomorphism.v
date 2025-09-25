@@ -94,10 +94,10 @@ Lemma i_ren_pres :
   (forall l ξ, map i l..[ren ξ] = (map i l)..[ren ξ]).
 Proof.
   apply Canonical.mut_term_ind ; intros ; try easy.
-  - asimpl. rewrite H. autosubst.
+  - asimpl. now rewrite H. 
   - simpl. now f_equal.
   - simpl. f_equal ; try easy.
-    + asimpl. rewrite H. autosubst.
+    + asimpl. now rewrite H. 
   - asimpl. now f_equal.
 Qed.
 
@@ -105,7 +105,7 @@ Lemma i_up_subst σ : up (σ >>> i) = up σ >>> i.
 Proof.
   f_ext.
   destruct x ; asimpl ; try easy.
-  - rewrite (proj1 i_ren_pres). autosubst.
+  - now rewrite (proj1 i_ren_pres). 
 Qed.
 
 Theorem i_subst_pres :
@@ -134,7 +134,7 @@ Lemma p_ren_pres :
   (forall l ξ, map p l..[ren ξ] = (map p l)..[ren ξ]).
 Proof.
   apply LambdaM.mut_term_ind ; intros ; asimpl ; auto.
-  - rewrite H. autosubst.
+  - now rewrite H. 
   - rewrite app_subst_comm. now f_equal.
   - f_equal ; try easy.
 Qed.
@@ -143,7 +143,7 @@ Lemma p_up_subst σ : up (σ >>> p) = up σ >>> p.
 Proof.
   f_ext.
   destruct x ; asimpl ; try easy.
-  - rewrite (proj1 p_ren_pres). autosubst.
+  - now rewrite (proj1 p_ren_pres). 
 Qed.
   
 Lemma p_subst_pres :

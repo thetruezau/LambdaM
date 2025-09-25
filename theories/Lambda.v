@@ -10,7 +10,7 @@ Inductive term: Type :=
 | Lam (t: {bind term})
 | App (s t: term).
 
-(* autosubst sorcery *)
+(* Autosubst classes *)
 (* ----------------- *)
 
 Instance Ids_term : Ids term. derive. Defined.
@@ -18,7 +18,7 @@ Instance Rename_term : Rename term. derive. Defined.
 Instance Subst_term : Subst term. derive. Defined.
 Instance SubstLemmas_term : SubstLemmas term. derive. Defined.
 
-(* beta reduction *)
+(* Beta reduction *)
 (* -------------- *) 
 
 Inductive step : relation term :=
@@ -31,7 +31,7 @@ Inductive step : relation term :=
 | Step_App2 s t t': step t t' ->
                     step (App s t) (App s t').
 
-(* λ-terms in β normal form *) 
+(* λ-terms in β-normal form *) 
 (* ------------------------ *) 
 
 Inductive normal: term -> Prop :=
@@ -47,7 +47,7 @@ Scheme sim_normal_ind := Induction for normal Sort Prop
 
 Combined Scheme mut_normal_ind from sim_normal_ind, sim_apps_ind.
 
-(* typing rules *)
+(* Typing rules *)
 (* ------------ *)
 
 Require Import SimpleTypes.
