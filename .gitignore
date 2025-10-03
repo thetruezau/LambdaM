@@ -47,6 +47,3 @@ time-of-build-pretty.log
 
 CoqMakefile
 CoqMakefile.conf
-
-theories/Confluence.v
-theories/HConfluence.v
