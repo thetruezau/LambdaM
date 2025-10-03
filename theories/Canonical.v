@@ -6,8 +6,8 @@ From Autosubst Require Import Autosubst.
 From Coq Require Import List.
 Import ListNotations.
 
-(* ---------------- *)
-(* termos canónicos *)
+(* Syntax for canonical terms *)
+(* -------------------------- *)
 
 Inductive term: Type :=
 | Vari (x: var)
@@ -77,8 +77,8 @@ Definition app (t u: term) (l: list term): term :=
 
 Notation "t '@(' u ',' l ')'" := (app t u l) (at level 9).
 
-(* substituição *)
-(* ------------ *)
+(* Substitution using Autosubst *)
+(* ---------------------------- *)
 
 Instance Ids_term : Ids term. derive. Defined.
 Instance Rename_term : Rename term. derive. Defined.
@@ -193,7 +193,14 @@ Proof.
   - reflexivity.
   - intros. apply subst_comp.
 Qed.
-    
+
+(* Then, the usual substitution lemma becomes trivial *)
+Lemma subst_lemma t u σ : t.[u/].[σ] = t.[up σ].[u.[σ]/].
+Proof. autosubst. Qed.
+
+(* Notions of compatibility *)
+(* ------------------------ *)
+
 Section Compatibilty.
 
   Variable base : relation term.
@@ -252,8 +259,8 @@ Proof.
   split ; intros ; induction H ; econstructor ; eauto. 
 Qed.  
 
-(* Redução em λm *)
-(* ------------- *)
+(* Reduction rules *)
+(* --------------- *)
 
 Inductive β1: relation term :=
 | Step_Beta1 (t: {bind term}) (t' u: term) :
@@ -373,7 +380,7 @@ Section CompatibilityLemmas.
   
 End CompatibilityLemmas.
 
-(* Canonical terms in β normal form *) 
+(* Canonical terms in β-normal form *) 
 (* -------------------------------- *) 
 
 Inductive normal: term -> Prop :=
@@ -390,8 +397,8 @@ Scheme sim_normal_ind := Induction for normal Sort Prop
 
 Combined Scheme mut_normal_ind from sim_normal_ind, sim_normal_list_ind.
 
-(* Typing Rules *)
-(* ------------ *)
+(* Typing rules for canonical expressions *)
+(* -------------------------------------- *)
 
 Require Import SimpleTypes.
 

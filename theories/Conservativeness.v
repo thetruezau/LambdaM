@@ -46,6 +46,14 @@ Proof.
            apply capp_is_multistep_H.
 Qed.
 
+Lemma can_app_comm t u u' l l' :
+  (t @(u, map p l)) @(p u', map p l') = 
+    t@(u, map p (l ++ u' :: l')).
+Proof.
+  destruct t ; simpl ; rewrite map_app ;
+    try rewrite<- app_assoc ; now simpl.
+Qed.
+
 Lemma conservativeness2 :
   (forall (t t': LambdaM.term), LambdaM.step t t' -> Canonical.multistep (p t) (p t'))
   /\
@@ -76,11 +84,7 @@ Proof.
 
     (* h colapsa passos H *)
     + inversion H ; subst ; asimpl.
-      (* aqui talvez fosse importante um lema! *)
-      destruct (p t0) ; asimpl ;
-        rewrite map_app ; try constructor.
-      * rewrite<- app_assoc. asimpl. constructor.
-      * rewrite<- app_assoc. asimpl. constructor.
+      rewrite can_app_comm. constructor.
 Qed.
 
 (* Teorema da conservatividade *)

@@ -7,8 +7,8 @@ From Autosubst Require Import Autosubst.
 
 Inductive term: Type :=
 | Var (x: var)
-| Lam (t: {bind term})
-| App (s t: term).
+| Lam (s: {bind term})
+| App (s1 s2: term).
 
 (* Autosubst classes *)
 (* ----------------- *)
@@ -22,14 +22,14 @@ Instance SubstLemmas_term : SubstLemmas term. derive. Defined.
 (* -------------- *) 
 
 Inductive step : relation term :=
-| Step_Beta s s' t : s' = s.[t .: ids] ->
-                     step (App (Lam s) t) s'
-| Step_Abs s s' : step s s' ->
-                  step (Lam s) (Lam s')
-| Step_App1 s s' t: step s s' ->
-                    step (App s t) (App s' t)
-| Step_App2 s t t': step t t' ->
-                    step (App s t) (App s t').
+| Step_Beta (s: {bind term}) (s' u: term) :
+  s' = s.[u .: ids] -> step (App (Lam s) u) s'
+| Step_Abs s s' :
+  step s s' -> step (Lam s) (Lam s')
+| Step_App1 s1 s1' s2 :
+  step s1 s1' -> step (App s1 s2) (App s1' s2)
+| Step_App2 s1 s2 s2':
+  step s2 s2' -> step (App s1 s2) (App s1 s2').
 
 (* λ-terms in β-normal form *) 
 (* ------------------------ *) 
@@ -40,7 +40,7 @@ Inductive normal: term -> Prop :=
   
 with apps: term -> Prop :=
 | nVar x : apps (Var x)
-| nApp s t : apps s -> normal t -> apps (App s t).
+| nApp s1 s2: apps s1 -> normal s2 -> apps (App s1 s2).
 
 Scheme sim_normal_ind := Induction for normal Sort Prop
   with sim_apps_ind := Induction for apps Sort Prop.  
@@ -57,11 +57,11 @@ Inductive sequent (Γ: var->type) : term -> type -> Prop :=
   Γ x = A ->
   sequent Γ (Var x) A
 
-| Intro (t: term) (A B: type) :
-  sequent (A .: Γ) t B ->
-  sequent Γ (Lam t) (Arr A B)
+| Intro (s: term) (A B: type) :
+  sequent (A .: Γ) s B ->
+  sequent Γ (Lam s) (Arr A B)
                                  
-| Elim (s t: term) (A B: type) :
-  sequent Γ s (Arr A B) ->
-  sequent Γ t A ->
-  sequent Γ (App s t) B.
+| Elim (s1 s2: term) (A B: type) :
+  sequent Γ s1 (Arr A B) ->
+  sequent Γ s2 A ->
+  sequent Γ (App s1 s2) B.

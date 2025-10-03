@@ -70,11 +70,9 @@ Proof.
   - asimpl. rewrite IHs1. asimpl. now rewrite IHs2. 
 Qed.
 
-Theorem inversion2 : forall s, θ (ψ s) = s.
+Corollary inversion2 : forall s, θ (ψ s) = s.
 Proof.
-  induction s ; asimpl ; try easy.
-  - autounfold in IHs. now f_equal.
-  - rewrite aux_inversion2. asimpl. now f_equal.
+  intro s. unfold ψ. now rewrite aux_inversion2.
 Qed.
 
 (* Lemas para preservaçao de renamings *)
@@ -246,13 +244,13 @@ Theorem ψ'_step_pres :
 Proof.
   intros s s' H0. induction H0 ; intros ; subst.
   - asimpl.    
-    destruct l as [| u l].
+    destruct l as [| u' l'].
     + constructor. left. constructor.
       now rewrite ψ_subst_rw.
     + constructor. right. constructor.
-      rewrite<- ψ_subst_rw. fold (ψ s.[t/]).
+      rewrite<- ψ_subst_rw. fold (ψ s.[u/]).
       now rewrite ψ_app_lemma.
-  - destruct l as [| u l] ; asimpl.
+  - destruct l as [| u' l'] ; asimpl.
     + constructor. apply IHstep.
     + constructor. apply IHstep.
   - asimpl. apply IHstep.

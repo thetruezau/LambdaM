@@ -62,6 +62,10 @@ Instance Rename_term : Rename term. derive. Defined.
 Instance Subst_term : Subst term. derive. Defined.
 Instance SubstLemmas_term : SubstLemmas term. derive. Defined.
 
+(* The usual substitution lemma becomes trivial *)
+Lemma subst_lemma t u σ : t.[u/].[σ] = t.[up σ].[u.[σ]/].
+Proof. autosubst. Qed.
+
 (* Notions of compatibilty for λm-expressions *)
 (* ------------------------------------------ *)
 

@@ -33,7 +33,7 @@ with is_canonical_list: list term -> Prop :=
   is_canonical u -> is_canonical_list l ->
   is_canonical_list (u::l).
 
-Local Hint Constructors is_canonical is_canonical_list : core.
+Hint Constructors is_canonical is_canonical_list : core.
 
 Scheme sim_is_canonical_ind := Induction for is_canonical Sort Prop
   with sim_is_canonical_list_ind := Induction for is_canonical_list Sort Prop.  
@@ -41,8 +41,8 @@ Scheme sim_is_canonical_ind := Induction for is_canonical Sort Prop
 Combined Scheme mut_is_canonical_ind from sim_is_canonical_ind, sim_is_canonical_list_ind.
 
 (* Definition of map h,
-   that collapses λm terms to canonical ones *)
-(* ----------------------------------------- *)
+   that collapses λm terms into canonical ones *)
+(* ------------------------------------------- *)
 
 Definition capp (v u: term) (l: list term) : term :=
   match v with
@@ -74,12 +74,12 @@ Lemma capp_is_canonical t u l :
   is_canonical (capp t u l).
 Proof.
   intros it iu il.
-  destruct t as [x | t | v u' l'] ; asimpl ; auto.
+  destruct t as [x | t | v u' l'] ; simpl ; auto.
   - inversion it ; subst. auto.
   - inversion it ; subst.
-    + constructor ; try easy.
+    + constructor ; try assumption.
       * apply list_append_is_canonical ; auto.
-    + constructor ; try easy.
+    + constructor ; try assumption.
       * apply list_append_is_canonical ; auto.
 Qed.
 
@@ -88,8 +88,8 @@ Proposition h_is_canonical :
   /\
   (forall l, is_canonical_list (map h l)).
 Proof.
-  apply mut_term_ind ; intros ; asimpl ; auto.
-  - apply capp_is_canonical ; auto.
+  apply mut_term_ind ; intros ; simpl ; auto.
+  - now apply capp_is_canonical.
 Qed.
 
 Proposition h_fixpoints :
@@ -97,8 +97,8 @@ Proposition h_fixpoints :
   /\
   (forall l, is_canonical_list l -> l = map h l).
 Proof.
-  apply mut_is_canonical_ind ;
-    intros ; asimpl ; repeat f_equal ; auto.
+  apply mut_is_canonical_ind ; intros ; simpl ;
+    now repeat f_equal.
 Qed.  
 
 (* Useful lemmas relating to map h *)
@@ -109,18 +109,18 @@ Lemma capp_h_comm t u l :
   is_canonical_list l ->
   capp (h t) u l = h (mApp t u l).
 Proof.
-  destruct t ; intros ; asimpl ; f_equal ;
+  destruct t ; intros ; simpl ; f_equal ;
     now apply h_fixpoints.
 Qed.
 
 Lemma capp_is_multistep_H t u l :
   multistep_H (mApp t u l) (capp t u l).
 Proof.
-  destruct t ; asimpl.
+  destruct t ; simpl.
   - apply rt1n_refl.
   - apply rt1n_refl.
   - apply rt1n_trans with (mApp t1 t2 (l0 ++ u :: l)).
-    + constructor. now constructor.
+    + now constructor.
     + apply rt1n_refl.
 Qed.
 
@@ -129,24 +129,23 @@ Lemma h_is_multistep_H :
   /\
   (forall l, multistep_H' l (map h l)).
 Proof.
-  pose multistep_H_is_compatible as Hmic.
+  pose multistep_H_is_compatible as Hmic. destruct Hmic.
 
-  apply mut_term_ind ; intros ; asimpl ; try constructor.
-  - apply comp_lam with multistep_H' ; easy.
+  apply mut_term_ind ; intros ; simpl ; try constructor ; auto.
   - apply multistep_trans with (mApp (h t) u l).
-    + apply comp_mApp1 with multistep_H' ; easy.
+    + now apply comp_mApp1.
     + apply multistep_trans with (mApp (h t) (h u) l).
-      * apply comp_mApp2 with multistep_H' ; easy.
+      * now apply comp_mApp2.
       * apply multistep_trans with (mApp (h t) (h u) (map h l)).
-        ** apply comp_mApp3 with multistep_H' ; easy.
+        ** now apply comp_mApp3.
         ** apply capp_is_multistep_H.
   - apply multistep_trans with (h u :: l).    
-    + apply comp_head with multistep_H ; easy.
+    + now apply comp_head.
     + apply multistep_trans with (h u :: map h l).
-      * apply comp_tail with multistep_H ; easy.
+      * now apply comp_tail. 
       * apply rt1n_refl.
 Qed.
-
+  
 (* Reduction relation for the canonical subsystem *)
 (* ---------------------------------------------- *)
   
