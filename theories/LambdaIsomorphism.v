@@ -209,7 +209,7 @@ Proof.
     apply IHl. now constructor.
 Qed.
     
-Theorem θ_step_pres :
+Proposition θ_step_pres :
   (forall (t t': Canonical.term), Canonical.step t t' -> Lambda.step (θ t) (θ t'))
   /\
   (forall (l l': list Canonical.term), Canonical.step' l l' -> forall s, Lambda.step (θ' s l) (θ' s l')).
@@ -229,6 +229,18 @@ Proof.
       rewrite (proj1 θ_subst_pres). now asimpl.
   - apply θ'_step_pres. now constructor. 
 Qed.
+
+Corollary θ_multistep_pres t t' :
+  Canonical.multistep t t' -> Lambda.multistep (θ t) (θ t').
+Proof.
+  induction 1 as [u | u u1 u2].
+  - constructor.
+  - econstructor.
+    + apply θ_step_pres. apply H.
+    + assumption.
+Qed.
+
+(* --- *)
 
 Lemma ψ_subst_rw s1 s2 :
   ψ' s1.[s2/] [] = (ψ' s1 []).[ψ' s2 []/].
@@ -261,6 +273,16 @@ Qed.
 Corollary ψ_step_pres :
   forall s s', Lambda.step s s' -> Canonical.step (ψ s) (ψ s').
 Proof. intros s s' H. now apply ψ'_step_pres. Qed.  
+
+Corollary ψ_multistep_pres s s' :
+  Lambda.multistep s s' -> Canonical.multistep (ψ s) (ψ s').
+Proof.
+  induction 1 as [u | u u1 u2].
+  - constructor.
+  - econstructor.
+    + apply ψ_step_pres. apply H.
+    + assumption.
+Qed.
 
 (* isomorphism at the level of types *)
 (* --------------------------------- *)

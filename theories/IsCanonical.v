@@ -145,47 +145,6 @@ Proof.
       * now apply comp_tail. 
       * apply rt1n_refl.
 Qed.
-
-(* just a small detour to achieve confluence of H reduction *)
-(* -------------------------------------------------------- *)
-
-Lemma capp_assoc t u l u' l' (it: is_canonical t):
-  capp (capp t u l) u' l' = capp t u (l++u'::l').
-Proof.
-  destruct it ; simpl ; try reflexivity.
-  - now rewrite<- app_assoc.
-  - now rewrite<- app_assoc.
-Qed.
-
-Lemma step_H_collapse :
-  (forall t t', step_H t t' -> h t = h t')
-  /\
-  (forall l l', step_H' l l' -> map h l = map h l').
-Proof.
-  apply mut_comp_ind ; intros ; simpl ; try now f_equal.
-  - inversion b. subst. simpl. rewrite capp_assoc.
-    + now rewrite map_app. 
-    + apply h_is_canonical.
-Qed.
-
-Corollary multistep_H_collapse t t' :
-  multistep_H t t' -> h t = h t'.
-Proof.
-  induction 1 as [u | u u1 u2].
-  - reflexivity.
-  - rewrite<- IHclos_refl_trans_1n. now apply step_H_collapse.
-Qed.
-
-Corollary H_confluence t t1 t2 :
-  multistep_H t t1 -> multistep_H t t2 ->
-  exists t', multistep_H t1 t' /\ multistep_H t2 t'. 
-Proof.
-  intros Ht1 Ht2. exists (h t). split.
-  - apply multistep_H_collapse in Ht1. rewrite Ht1.
-    apply h_is_multistep_H.
-  - apply multistep_H_collapse in Ht2. rewrite Ht2.
-    apply h_is_multistep_H.
-Qed.
   
 (* Reduction relation for the canonical subsystem *)
 (* ---------------------------------------------- *)

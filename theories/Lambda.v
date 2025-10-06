@@ -1,4 +1,5 @@
 From Coq Require Import Relations.Relation_Definitions.
+From Coq Require Import Relations.Relation_Operators.
 
 From Autosubst Require Import Autosubst.
 
@@ -30,6 +31,9 @@ Inductive step : relation term :=
   step s1 s1' -> step (App s1 s2) (App s1' s2)
 | Step_App2 s1 s2 s2':
   step s2 s2' -> step (App s1 s2) (App s1 s2').
+
+Definition multistep := clos_refl_trans_1n _ step.
+Hint Unfold multistep : core.
 
 (* λ-terms in β-normal form *) 
 (* ------------------------ *) 

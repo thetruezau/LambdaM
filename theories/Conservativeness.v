@@ -10,7 +10,7 @@ From Coq Require Import List.
 Import ListNotations.
 
 Lemma conservativeness1 :
-  (forall (t t': Canonical.term), Canonical.step t t' -> LambdaM.multistep (i t) (i t'))
+  (forall t t', Canonical.step t t' -> LambdaM.multistep (i t) (i t'))
   /\
   (forall l l', Canonical.step' l l' -> LambdaM.multistep' (map i l) (map i l')).
 Proof.
@@ -67,7 +67,6 @@ Proof.
   - now apply multistep_comp_app3. 
     
   - inversion b as [Beta | H].
-
     (* h preserva passos Beta *)
     + inversion Beta as [Beta1 | Beta2].
       * inversion Beta1 ; subst ; asimpl.
@@ -87,12 +86,20 @@ Proof.
       rewrite can_app_comm. constructor.
 Qed.
 
+Corollary conservativeness2' t t' :
+  LambdaM.multistep t t' -> Canonical.multistep (p t) (p t').
+Proof.
+  induction 1 as [u | u u1 u2].
+  - constructor.
+  - apply conservativeness2 in H.
+    eapply multistep_trans ; eauto.
+Qed.
+
 (* Teorema da conservatividade *)
 (* --------------------------- *)
 
 Theorem conservativeness :
-  forall t t', Canonical.multistep t t' <->
-           LambdaM.multistep (i t) (i t').
+  forall t t', Canonical.multistep t t' <-> LambdaM.multistep (i t) (i t').
 Proof.
   split.
   - intro H.

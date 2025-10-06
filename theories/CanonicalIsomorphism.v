@@ -10,8 +10,8 @@ Require Import IsCanonical.
 From Coq Require Import List.
 Import ListNotations.
 
-(* Injecção de λ⃗ em λm *)
-(* -------------------- *)
+(* Injection from  λ⃗ to λm *)
+(* ------------------------ *)
 
 Fixpoint i (t: Canonical.term) : LambdaM.term :=
   match t with
@@ -21,8 +21,8 @@ Fixpoint i (t: Canonical.term) : LambdaM.term :=
   | LambApp v u l => mApp (Lam (i v)) (i u) (map i l)
   end.
 
-(* Projecção de λm em λ⃗ *)
-(* --------------------- *)
+(* Projection of λm to λ⃗ *)
+(* ---------------------- *)
 
 Fixpoint p (t: LambdaM.term) : Canonical.term :=
   match t with
@@ -52,7 +52,7 @@ Qed.
 (* p e i são bijecções *)
 (* ------------------- *)
 
-Theorem inversion1 :
+Proposition inversion1 :
   (forall (t: LambdaM.term), i (p t) = h t)
   /\
   (forall (l: list LambdaM.term), map i (map p l) = map h l).
@@ -85,8 +85,8 @@ Proof.
     intros ; asimpl ; repeat f_equal ; auto.
 Qed.
 
-(* Resultados para a preservacao da substituicao por i *)
-(* --------------------------------------------------- *)
+(* "Preservation" of the susbtitution operation by map i *)
+(* ----------------------------------------------------- *)
 
 Lemma i_ren_pres :
   (forall t ξ, i t.[ren ξ] = (i t).[ren ξ])
@@ -102,13 +102,12 @@ Proof.
 Qed.
 
 Lemma i_up_subst σ : up (σ >>> i) = up σ >>> i.
-Proof.
-  f_ext.
-  destruct x ; asimpl ; try easy.
+Proof. 
+  f_ext. destruct x ; asimpl ; try easy.
   - now rewrite (proj1 i_ren_pres). 
 Qed.
 
-Theorem i_subst_pres :
+Lemma i_subst_pres :
   (forall t σ, i t.[σ] = h (i t).[σ >>> i])
   /\
   (forall l σ, map i l..[σ] = map h (map i l)..[σ >>> i]).
@@ -125,7 +124,7 @@ Qed.
 Lemma i_subst_rw u : (i u).:ids = (u.:ids)>>>i.
 Proof. autosubst. Qed.
 
-(* Resultados para a preservacao da substituicao por p *)
+(* Preservation of the substitution operation by map p *)
 (* --------------------------------------------------- *)
 
 Lemma p_ren_pres :
@@ -159,8 +158,8 @@ Qed.
 Lemma p_subst_rw u : (p u).:ids = (u.:ids)>>>p.
 Proof. autosubst. Qed.
 
-(* Isomorfismos ao nivel da reducao *)
-(* -------------------------------- *)
+(* Isomorphism at the level of reduction *)
+(* ------------------------------------- *)
 
 Lemma step_can_is_compatible :
   Canonical.is_compatible
@@ -236,7 +235,7 @@ Proof.
     constructor. now constructor.
 Qed.
     
-Theorem i_step_pres :
+Proposition i_step_pres :
   (forall (t t': Canonical.term),
       Canonical.step t t' -> step_can (i t) (i t'))
   /\
@@ -266,7 +265,10 @@ Proof.
       constructor. right. now constructor. 
 Qed.
 
-Theorem p_step_pres t t':
+(* map p *)
+(* ----- *)
+
+Proposition p_step_pres t t':
   step_can t t' -> Canonical.step (p t) (p t').
 Proof.
   pose Canonical.step_is_compatible as Hic. destruct Hic.  
@@ -321,7 +323,7 @@ Proof.
   - eapply append_is_admissible ; eauto.
 Qed.
 
-Lemma p_is_admissible Γ t A :
+Proposition p_is_admissible Γ t A :
   canonical_sequent Γ t A -> Canonical.sequent Γ (p t) A.
 Proof.
   intro Hs. induction Hs.
@@ -335,7 +337,7 @@ Proof.
   - eapply app_is_admissible ; eauto.
 Qed.  
 
-Lemma i_is_admissible :
+Proposition i_is_admissible :
   forall Γ,
     (forall t A, Canonical.sequent Γ t A -> canonical_sequent Γ (i t) A)
     /\
