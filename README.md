@@ -5,7 +5,7 @@ The multiary lambda calculus is an extension of the ordinary lambda calculus whe
 ## Meta
 
 - Author(s):
-  - François Pottier (initial)
+  - Miguel Alves
 - Compatible Coq versions: 8.14 or later
 - Additional dependencies: rocq-community/autosubst (https://github.com/rocq-community/autosubst/)
 
