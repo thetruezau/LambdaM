@@ -1,11 +1,31 @@
 # LambdaM
-The multiary lambda calculus, here Lambda-M, is an extension of the usual lambda calculus where a term is applied to a list of terms. 
 
-Here we formalize some interesting properties of this system using the Rocq Proof Assistant and also the Autosubst Library.
+The multiary lambda calculus is an extension of the ordinary lambda calculus where an applicative term has a list of terms as arguments.
 
-## How to Run
-`coq_makefile -f _CoqProject -o CoqMakefile` (create CoqMakefile from _CoqProject)
+## Meta
 
-`make -f CoqMakefile` (compile various files in theories/ to be used as libraries to other files)
+- Author(s):
+  - François Pottier (initial)
+- Compatible Coq versions: 8.14 or later
+- Additional dependencies: rocq-community/autosubst (https://github.com/rocq-community/autosubst/)
 
-The user is supposed to be running Coq in some environment (such as ProofGeneral or CoqIde). 
+## Documentation
+
+### Workflow
+
+The basic workflow for running our scripts is as follows:
+
+1. The user creates a `CoqMakefile` file from the `_CoqProject` file by runnig
+   `coq_makefile -f _CoqProject -o CoqMakefile`
+2. The user compiles the various scripts in the `theories/` directory by running
+   `make -f CoqMakefile` 
+3. The user runs any script from the `theories/` directory using any Coq/Rocq environment
+4. Optionally, the user may clean the `theories/` directory by running 
+   `make clean -f CoqMakefile` 
+
+### Files
+
+The library consists of the following files:
+
+- [LambdaM.v](theories/LambdaM.v)  
+  The multiary lambda calculus definitions.
