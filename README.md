@@ -7,7 +7,7 @@ The multiary lambda calculus is an extension of the ordinary lambda calculus whe
 - Author(s):
   - Miguel Alves
 - Compatible Coq versions: 8.14 or later
-- Additional dependencies: rocq-community/autosubst (https://github.com/rocq-community/autosubst/)
+- Additional dependencies: autosubst (https://github.com/rocq-community/autosubst/)
 
 ## Documentation
 
@@ -28,4 +28,13 @@ The basic workflow for running our scripts is as follows:
 The library consists of the following files:
 
 - [LambdaM.v](theories/LambdaM.v)  
-  The multiary lambda calculus definitions.
+  Contains definitions for the multiary lambda calculus.
+- [IsCanonical.v](theories/IsCanonical.v)
+  Contains definitions for the canonical subsystem of the multiary lambda calculus.
+- [Canonical.v](theories/Canonical.v)
+  Contains definitions for the self-contaiend canonical subsystem of the multiary lambda calculus (we also call it canonical lambda calculus).
+- [CanonicalIsomorphism.v](theories/CanonicalIsomorphism.v)
+  Contains the proof of the isomorphism between both representations of the canonical subsystem of the multiary lambda calculus.
+- [Conservativeness.v](theories/Conservativeness.v)
+  Contains the proof that the multiary lambda calculus is conservative over the canonical lambda calculus.
+...
