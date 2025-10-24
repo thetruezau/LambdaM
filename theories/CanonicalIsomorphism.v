@@ -234,7 +234,10 @@ Proof.
       with (map h ((i u) :: l'0)) ; try easy.
     constructor. now constructor.
 Qed.
-    
+
+(* i preserves reduction *)
+(* --------------------- *)
+
 Proposition i_step_pres :
   (forall (t t': Canonical.term),
       Canonical.step t t' -> step_can (i t) (i t'))
@@ -249,15 +252,15 @@ Proof.
   - inversion b.
     + (* Caso Beta1 *)
       inversion H. subst. 
-      specialize (proj1 i_is_canonical) with (LambApp t0 u []).
-      intro ic1. apply h_fixpoints in ic1. rewrite ic1.
+      specialize (proj1 i_is_canonical) with (LambApp t0 u []) as ic1.
+      apply h_fixpoints in ic1. rewrite ic1.
       rewrite (proj1 i_subst_pres).
       constructor. asimpl. 
       constructor. left. now constructor. 
     + (* Caso Beta2 *)
       inversion H. subst.
-      specialize (proj1 i_is_canonical) with (LambApp t0 u (v::l)).
-      intro ic1. apply h_fixpoints in ic1. rewrite ic1.
+      specialize (proj1 i_is_canonical) with (LambApp t0 u (v::l)) as ic1.
+      apply h_fixpoints in ic1. rewrite ic1.
       rewrite i_app_comm.
       rewrite (proj1 i_subst_pres).
       rewrite capp_h_comm ; try apply i_is_canonical.
@@ -265,8 +268,8 @@ Proof.
       constructor. right. now constructor. 
 Qed.
 
-(* map p *)
-(* ----- *)
+(* p preserves reduction *)
+(* --------------------- *)
 
 Proposition p_step_pres t t':
   step_can t t' -> Canonical.step (p t) (p t').
@@ -296,8 +299,8 @@ Proof.
       f_equal. rewrite p_subst_rw. apply p_subst_pres.
 Qed.
 
-(* Isomorfismos admissiveis ao nivel das regras de tipificacao *)
-(* ----------------------------------------------------------- *)
+(* Isomorphism at the level of types *)
+(* --------------------------------- *)
 
 Require Import SimpleTypes.
 
@@ -343,8 +346,7 @@ Proposition i_is_admissible :
     /\
     (forall A l B, Canonical.list_sequent Γ A l B -> canonical_list_sequent Γ A (map i l) B).
 Proof.
-  apply Canonical.mut_sequent_ind ;
-    intros ; asimpl ; ainv.
+  apply Canonical.mut_sequent_ind ; intros ; asimpl ; ainv.
   - replace (Var x) with (h (Var x)) ; try easy.
     constructor. now constructor.
   - replace (Lam (h t0)) with (h (Lam t0)) ; try easy.

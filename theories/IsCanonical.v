@@ -14,21 +14,17 @@ Import ListNotations.
 Inductive is_canonical: term -> Prop :=
 | cVar (x: var) :
   is_canonical (Var x)
-
 | cLam (t: {bind term}) :
   is_canonical t -> is_canonical (Lam t)
-
 | cVarApp (x: var) (u: term) (l: list term) :
   is_canonical u -> is_canonical_list l ->
   is_canonical (mApp (Var x) u l)
-
 | cLamApp (t: {bind term}) (u: term) (l: list term) :
   is_canonical t -> is_canonical u -> is_canonical_list l ->
   is_canonical (mApp (Lam t) u l)
 
 with is_canonical_list: list term -> Prop :=
 | cNil : is_canonical_list []
-
 | cCons (u: term) (l: list term) :
   is_canonical u -> is_canonical_list l ->
   is_canonical_list (u::l).
@@ -39,6 +35,69 @@ Scheme sim_is_canonical_ind := Induction for is_canonical Sort Prop
   with sim_is_canonical_list_ind := Induction for is_canonical_list Sort Prop.  
 
 Combined Scheme mut_is_canonical_ind from sim_is_canonical_ind, sim_is_canonical_list_ind.
+
+(* Canonical terms are in fact h-normal forms *)
+(* ------------------------------------------ *)
+
+Definition h_normal t := ~exists t', step_H t t'.
+Definition h_normal' l := ~exists l', step_H' l l'.
+
+(* In the text as Claim 2. => *)
+Proposition canonical_is_h_normal :
+  (forall t, is_canonical t -> h_normal t)
+  /\
+  (forall l, is_canonical_list l -> h_normal' l).
+Proof.
+  apply mut_is_canonical_ind ; intros.
+  - intro H. destruct H as [u]. ainv.
+  - intro H'. destruct H' as [u].
+    inversion H0 ; subst ; try now ainv ; eauto.
+  - intro H'. destruct H' as [t'].
+    inversion H1 ; subst ; try now ainv ; eauto.
+  - intro H'. destruct H' as [l'].
+    inversion H2 ; subst ; try now ainv ; eauto.
+  - intro H'. destruct H' as [l']. ainv.
+  - intro H'. destruct H' as [l'].
+    inversion H1 ; subst ; try now ainv ; eauto.
+Qed.
+
+(* In the text as Claim 2. <= *)
+Proposition h_normal_is_canonical :
+  (forall t, h_normal t -> is_canonical t)
+  /\
+  (forall l, h_normal' l -> is_canonical_list l).
+Proof.
+  apply mut_term_ind ; intros.
+  - constructor.
+  - constructor. apply H.
+    intro H'. destruct H' as [t'].
+    apply Comp_Lam in H1. eauto.
+  - destruct t as [| | t' u' l'].
+    + constructor.
+      * apply H0. intro H'. destruct H' as [u']. 
+        apply Comp_mApp2 with (t:=(Var x)) (l:=l) in H3. eauto.
+      * apply H1. intro H'. destruct H' as [l']. 
+        apply Comp_mApp3 with (t:=(Var x)) (u:=u) in H3. eauto.
+    + constructor.
+      * cut (is_canonical (Lam t)).
+        ** intro H'. ainv.
+        ** apply H. intro H'. destruct H' as [t'].
+           apply Comp_mApp1 with (u:=u) (l:=l) in H3. eauto.
+      * apply H0. intro H'. destruct H' as [u']. 
+        apply Comp_mApp2 with (t:=(Lam t)) (l:=l) in H3. eauto.
+      * apply H1. intro H'. destruct H' as [l']. 
+        apply Comp_mApp3 with (t:=(Lam t)) (u:=u) in H3. eauto.
+    + destruct H2. exists (mApp t' u' (l' ++ (u::l))).
+      constructor. now constructor.
+  - constructor.
+  - constructor.
+    + apply H.
+      intro H'. destruct H' as [u']. apply H1.
+      apply Comp_Head with (l:=l) in H2. eauto.
+    + apply H0.
+      intro H'. destruct H' as [l']. apply H1.
+      apply Comp_Tail with (u:=u) in H2. eauto.
+Qed.                      
 
 (* Definition of map h,
    that collapses λm terms into canonical ones *)
