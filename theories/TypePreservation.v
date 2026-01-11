@@ -30,8 +30,7 @@ Lemma type_substitution :
     (forall A l B, list_sequent Γ A l B ->
                forall σ Δ, (forall x, sequent Δ (σ x) (Γ x)) -> list_sequent Δ A l..[σ] B).
 Proof.  
-  apply mut_sequent_ind ; 
-    intros ; subst ; try econstructor ; eauto.
+  apply mut_sequent_ind ; intros ; subst ; try econstructor ; eauto.
   - apply H. destruct x ; asimpl.
     + now constructor. 
     + eapply type_renaming ; eauto.
@@ -99,8 +98,7 @@ Theorem type_preservation :
   /\
   (forall l l', step' l l' -> forall Γ A B, list_sequent Γ A l B -> list_sequent Γ A l' B).
 Proof.
-  apply mut_comp_ind ; intros ;
-    try (now ainv ; eauto).
+  apply mut_comp_ind ; intros ; try (now ainv ; eauto).
   (* with this tactic we automatically solve trivial goals! *)
   
   - inversion b.

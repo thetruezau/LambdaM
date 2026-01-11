@@ -250,9 +250,8 @@ Proof.
   autosubst.
 Qed.
 
-Theorem ψ'_step_pres :
-  forall s s', Lambda.step s s' ->
-          forall l, Canonical.step (ψ' s l) (ψ' s' l).
+Proposition ψ'_step_pres :
+  forall s s', Lambda.step s s' -> forall l, Canonical.step (ψ' s l) (ψ' s' l).
 Proof.
   intros s s' H0. induction H0 ; intros ; subst.
   - asimpl.    

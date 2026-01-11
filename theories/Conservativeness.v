@@ -103,15 +103,13 @@ Theorem conservativeness :
 Proof.
   split.
   - intro H.
-    induction H as [| t1 t2 t3].
-    + constructor.
+    induction H as [| t1 t2 t3] ; try constructor.
     + apply multistep_trans with (i t2) ; try easy.
-      * now apply conservativeness1. 
+      * fold LambdaM.multistep. now apply conservativeness1. 
   - intro H.
     rewrite<- (proj1 inversion2) with t.
     rewrite<- (proj1 inversion2) with t'.
-    induction H as [| t1 t2 t3].
-    + constructor.
+    induction H as [| t1 t2 t3] ; try constructor.
     + apply multistep_trans with (p t2) ; try easy.
-      * now apply conservativeness2. 
+      * fold Canonical.multistep. now apply conservativeness2. 
 Qed.

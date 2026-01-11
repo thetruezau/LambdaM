@@ -205,10 +205,10 @@ Require Import SimpleTypes.
 Inductive sequent (Γ: var->type) : term -> type -> Prop := 
 | varAxiom (x: var) (A: type) :
   Γ x = A -> sequent Γ (Var x) A
-
+                    
 | Right (t: term) (A B: type) :
   sequent (A .: Γ) t B -> sequent Γ (Lam t) (Arr A B)
-
+                                 
 | HeadCut (t u: term) (l: list term) (A B C: type) :
   sequent Γ t (Arr A B) -> sequent Γ u A -> list_sequent Γ B l C ->
   sequent Γ (mApp t u l) C
